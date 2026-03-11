@@ -3,9 +3,38 @@
 @import "@fontsource/space-mono/400.css";
 @import "@fontsource/space-mono/700.css";
 @import "@fontsource/caveat/400.css";
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "tailwindcss";
+
+/* ── THEME (migrated from tailwind.config.js) ── */
+@theme {
+  --font-sans: "Space Grotesk", sans-serif;
+  --font-mono: "Space Mono", monospace;
+  --font-hand: "Caveat", cursive;
+
+  --color-yellow: #FFE135;
+  --color-cyan: #00F5D4;
+  --color-pink: #FF2D78;
+  --color-ink: #0A0A0A;
+  --color-paper: #FAF9F6;
+  --color-muted: #F0EDE8;
+
+  --font-size-display: clamp(3.5rem, 9vw, 10rem);
+  --font-size-display--line-height: 0.92;
+  --font-size-display--letter-spacing: -0.03em;
+
+  --font-size-headline: clamp(2rem, 5vw, 6rem);
+  --font-size-headline--line-height: 0.95;
+  --font-size-headline--letter-spacing: -0.02em;
+
+  --font-size-title: clamp(1.25rem, 2.5vw, 2.5rem);
+  --font-size-title--line-height: 1.1;
+
+  --shadow-brutal: 4px 4px 0px #0A0A0A;
+  --shadow-brutal-md: 6px 6px 0px #0A0A0A;
+  --shadow-brutal-lg: 10px 10px 0px #0A0A0A;
+  --shadow-brutal-y: 6px 6px 0px #FFE135;
+  --shadow-brutal-inv: 4px 4px 0px #FAF9F6;
+}
 
 @layer base {
   * { box-sizing: border-box; margin: 0; padding: 0; }
