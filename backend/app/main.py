@@ -1,0 +1,35 @@
+# WHO WRITES THIS: Backend developer
+# WHAT THIS DOES: FastAPI app entry point. Registers CORS, rate limiter,
+#                 all routers. On startup: creates DB tables + loads SBERT model.
+# DEPENDS ON: all api routers, config, init_db, rate_limit middleware
+
+from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
+from app.config import settings
+from app.db.init_db import init_db
+from app.api import auth, students, recruiters, jobs, matches
+from app.api import applications, chatbot, analytics
+
+app = FastAPI(title="TalentSync API", version="1.0.0")
+
+app.add_middleware(CORSMiddleware,
+    allow_origins=settings.CORS_ORIGINS,
+    allow_credentials=True, allow_methods=["*"], allow_headers=["*"])
+
+app.include_router(auth.router)
+app.include_router(students.router)
+app.include_router(recruiters.router)
+app.include_router(jobs.router)
+app.include_router(matches.router)
+app.include_router(applications.router)
+app.include_router(chatbot.router)
+app.include_router(analytics.router)
+
+@app.on_event("startup")
+def startup():
+    init_db()
+    # TODO: from app.ml.encoder import load_model; load_model()
+
+@app.get("/health")
+def health():
+    return {"status": "ok", "service": "TalentSync API"}

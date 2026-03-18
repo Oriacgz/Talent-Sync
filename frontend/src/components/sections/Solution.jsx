@@ -18,7 +18,7 @@ export default function Solution({ dark }) {
     const ctx = gsap.context(() => {
       
       const tl = gsap.timeline({
-        scrollTrigger: {
+        scrollTrigger: { fastScrollEnd: true, preventOverlaps: true, 
           trigger: triggerRef.current,
           start: "top top",
           end: "+=300%", // 300vh scroll duration
@@ -138,8 +138,8 @@ export default function Solution({ dark }) {
   }, [fullText]);
 
   return (
-    <section id="solution" className="bg-ink text-paper relative" ref={triggerRef}>
-      <div className="min-h-screen w-full relative overflow-hidden flex flex-col items-center justify-center py-[60px] md:py-[80px] lg:py-[120px] px-[5vw] md:px-[6vw] lg:px-[8vw]">
+    <section id="solution" className="bg-ink text-paper relative" style={{ padding: "clamp(60px, 8vw, 140px) clamp(20px, 6vw, 100px)" }} ref={triggerRef}>
+      <div className="min-h-screen w-full relative overflow-hidden flex flex-col items-center justify-center ">
         
         <span aria-hidden="true" style={{ fontSize: "min(18vw, 220px)", opacity: 0.028, position: "absolute", right: "-2vw", top: "50%", transform: "translateY(-50%)", pointerEvents: "none", userSelect: "none", zIndex: 0, color: "currentColor" }}>
           02

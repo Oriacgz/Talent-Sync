@@ -26,6 +26,7 @@
     "react-router-dom": "^7.13.1",
     "recharts": "^3.8.0",
     "tailwindcss": "^4.2.1",
+    "terser": "^5.46.1",
     "three": "^0.183.2"
   },
   "devDependencies": {

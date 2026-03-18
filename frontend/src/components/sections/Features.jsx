@@ -336,7 +336,7 @@ export default function Features({ dark }) {
           },
           ease: 'power3.inOut',
           onComplete: function() { gsap.set(this.targets(), { clearProps: 'willChange' }) },
-          scrollTrigger: {
+          scrollTrigger: { fastScrollEnd: true, preventOverlaps: true, 
             trigger: cardsContainerRef.current,
             start: 'top 75%',
           }
@@ -348,7 +348,7 @@ export default function Features({ dark }) {
   }, []);
 
   return (
-    <section id="features" ref={sectionRef} className="relative bg-ink text-paper py-[60px] md:py-[80px] lg:py-[120px] flex flex-col items-center overflow-x-hidden">
+    <section id="features" ref={sectionRef} className="relative bg-ink text-paper flex flex-col items-center overflow-x-hidden" style={{ padding: 'clamp(60px, 8vw, 140px) 0' }}>
       
       <span aria-hidden="true" style={{ fontSize: "min(18vw, 220px)", opacity: 0.028, position: "absolute", right: "-2vw", top: "50%", transform: "translateY(-50%)", pointerEvents: "none", userSelect: "none", zIndex: 0, color: "currentColor" }}>
         04
@@ -361,7 +361,7 @@ export default function Features({ dark }) {
 
       <SectionLabel label="04 / FEATURES" dark={true} className="left-8 top-48 lg:top-64 opacity-20 hidden md:block z-20" />
 
-      <div className="w-full max-w-[1240px] px-[5vw] md:px-[6vw] lg:px-[8vw] relative z-10 flex flex-col">
+      <div className="container relative z-10 flex flex-col">
         
         {/* HEADER */}
         <div className="flex flex-col md:flex-row gap-12 justify-between items-end mb-[40px] md:mb-[60px] lg:mb-[80px] lg:ml-24">
@@ -391,7 +391,7 @@ export default function Features({ dark }) {
         {/* THE GRID */}
         <div 
           ref={cardsContainerRef}
-          className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-[2px] w-full bg-ink mt-8 pb-32"
+          className="grid grid-cols-1 min-[900px]:grid-cols-2 min-[1100px]:grid-cols-3 gap-[2px] w-full bg-ink mt-8 pb-32"
           style={{ perspective: "1000px" }}
         >
           {features.map((feat) => (

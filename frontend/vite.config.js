@@ -1,20 +1,24 @@
-import { defineConfig } from 'vite'
-import react from '@vitejs/plugin-react'
-import tailwindcss from '@tailwindcss/vite'
+import { defineConfig } from "vite";
+import react from "@vitejs/plugin-react";
+import tailwindcss from "@tailwindcss/vite";
 
-// https://vite.dev/config/
 export default defineConfig({
   plugins: [react(), tailwindcss()],
   build: {
+    target: "es2015",
+    minify: "terser",
+    cssMinify: true,
     rollupOptions: {
       output: {
         manualChunks: {
-          'react-vendor': ['react', 'react-dom'],
-          'three': ['three', '@react-three/fiber', '@react-three/drei'],
-          'gsap': ['gsap'],
-          'motion': ['framer-motion'],
-        }
-      }
-    }
-  }
-})
+          "vendor-react": ["react", "react-dom"],
+          "vendor-gsap": ["gsap"],
+          "vendor-three": ["three", "@react-three/fiber", "@react-three/drei"],
+          "vendor-motion": ["framer-motion"],
+          "vendor-lenis": ["lenis"],
+          "vendor-recharts": ["recharts"],
+        },
+      },
+    },
+  },
+});

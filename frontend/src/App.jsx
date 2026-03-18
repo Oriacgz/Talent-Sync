@@ -4,15 +4,21 @@ import { useLenis } from './hooks/useLenis';
 import Loader from './components/Loader';
 import Navbar from './components/Navbar';
 import Hero from './components/sections/Hero';
-import Problem from './components/sections/Problem';
-import Solution from './components/sections/Solution';
-import HowItWorks from './components/sections/HowItWorks';
-import Features from './components/sections/Features';
-import Stats from './components/sections/Stats';
-import Fairness from './components/sections/Fairness';
-import ForWho from './components/sections/ForWho';
-import CTA from './components/sections/CTA';
-import Footer from './components/sections/Footer';
+import ScrollTrigger from 'gsap/ScrollTrigger';
+
+gsap.registerPlugin(ScrollTrigger);
+gsap.config({ force3D: true, nullTargetWarn: false });
+ScrollTrigger.config({ limitCallbacks: true, syncInterval: 40 });
+
+const Problem = React.lazy(() => import("./components/sections/Problem"));
+const Solution = React.lazy(() => import("./components/sections/Solution"));
+const HowItWorks = React.lazy(() => import("./components/sections/HowItWorks"));
+const Features = React.lazy(() => import("./components/sections/Features"));
+const Stats = React.lazy(() => import("./components/sections/Stats"));
+const Fairness = React.lazy(() => import("./components/sections/Fairness"));
+const ForWho = React.lazy(() => import("./components/sections/ForWho"));
+const CTA = React.lazy(() => import("./components/sections/CTA"));
+const Footer = React.lazy(() => import("./components/sections/Footer"));
 
 export default function App() {
   useLenis();
@@ -23,7 +29,7 @@ export default function App() {
     gsap.to("#scroll-progress", {
       scaleX: 1,
       ease: "none",
-      scrollTrigger: {
+      scrollTrigger: { fastScrollEnd: true, preventOverlaps: true, 
         trigger: document.body,
         start: "top top",
         end: "bottom bottom",
@@ -107,17 +113,21 @@ export default function App() {
       <Loader />
       <Navbar dark={dark} setDark={setDark} />
       <main>
-        <Hero dark={dark} />
-        <Problem dark={dark} />
-        <Solution dark={dark} />
-        <HowItWorks dark={dark} />
-        <Features dark={dark} />
-        <Stats dark={dark} />
-        <Fairness dark={dark} />
-        <ForWho dark={dark} />
-        <CTA dark={dark} />
+        <section id="home"><Hero dark={dark} /></section>
+        <React.Suspense fallback={<div style={{height:"100vh", background:"#0A0A0A"}} />}>
+          <section id="problem"><Problem dark={dark} /></section>
+          <Solution dark={dark} />
+          <section id="how-it-works"><HowItWorks dark={dark} /></section>
+          <section id="features"><Features dark={dark} /></section>
+          <Stats dark={dark} />
+          <section id="impact"><Fairness dark={dark} /></section>
+          <ForWho dark={dark} />
+          <CTA dark={dark} />
+        </React.Suspense>
       </main>
-      <Footer dark={dark} />
+      <React.Suspense fallback={null}>
+        <Footer dark={dark} />
+      </React.Suspense>
     </div>
   );
 }

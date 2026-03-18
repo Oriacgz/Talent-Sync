@@ -1,8 +1,9 @@
 import React, { useMemo, useRef, useEffect } from 'react';
 import gsap from 'gsap';
 import ScrollTrigger from 'gsap/ScrollTrigger';
-import { Canvas, useFrame } from '@react-three/fiber';
-import * as THREE from 'three';
+
+const Scene = React.lazy(() => import("../three/Scene"));
+const isMobile = window.innerWidth < 1024 || /Android|iPhone|iPad/i.test(navigator.userAgent);
 
 import Badge from '../ui/Badge';
 import BrutalButton from '../ui/BrutalButton';
@@ -11,57 +12,6 @@ import PaperTear from '../ui/PaperTear';
 
 gsap.registerPlugin(ScrollTrigger);
 
-function Particles() {
-  const count = 600;
-  
-  const { whiteArr, yellowArr } = useMemo(() => {
-    const whitePositions = [];
-    const yellowPositions = [];
-    
-    for (let i = 0; i < count; i++) {
-      const x = (Math.random() - 0.5) * 20;
-      const y = (Math.random() - 0.5) * 20;
-      const z = (Math.random() - 0.5) * 10 - 5;
-      if (Math.random() > 0.8) {
-        yellowPositions.push(x, y, z);
-      } else {
-        whitePositions.push(x, y, z);
-      }
-    }
-    return {
-      whiteArr: new Float32Array(whitePositions),
-      yellowArr: new Float32Array(yellowPositions)
-    };
-  }, []);
-
-  const groupRef = useRef();
-
-  useFrame((state, delta) => {
-    if (groupRef.current) {
-      groupRef.current.position.y += delta * 0.2;
-      if (groupRef.current.position.y > 10) groupRef.current.position.y = -10;
-      groupRef.current.rotation.x = -state.pointer.y * 0.03;
-      groupRef.current.rotation.y = state.pointer.x * 0.03;
-    }
-  });
-
-  return (
-    <group ref={groupRef}>
-      <points>
-        <bufferGeometry>
-          <bufferAttribute attach="attributes-position" count={whiteArr.length / 3} array={whiteArr} itemSize={3} />
-        </bufferGeometry>
-        <pointsMaterial size={0.06} color="#ffffff" transparent opacity={0.3} sizeAttenuation depthWrite={false} />
-      </points>
-      <points>
-        <bufferGeometry>
-          <bufferAttribute attach="attributes-position" count={yellowArr.length / 3} array={yellowArr} itemSize={3} />
-        </bufferGeometry>
-        <pointsMaterial size={0.08} color="#FFE135" transparent opacity={0.15} sizeAttenuation depthWrite={false} />
-      </points>
-    </group>
-  );
-}
 
 export default function Hero({ dark }) {
   useEffect(() => {
@@ -137,19 +87,19 @@ export default function Hero({ dark }) {
       gsap.to('.grid-bg-parallax', {
         y: '30vh',
         ease: 'none',
-        scrollTrigger: { trigger: '#hero-section', start: 'top top', end: 'bottom top', scrub: 1 }
+        scrollTrigger: { fastScrollEnd: true, preventOverlaps: true,  trigger: '#hero-section', start: 'top top', end: 'bottom top', scrub: 1 }
       });
       
       gsap.to('.hero-main-content', {
         y: '-5vh',
         ease: 'none',
-        scrollTrigger: { trigger: '#hero-section', start: 'top top', end: 'bottom top', scrub: 1 }
+        scrollTrigger: { fastScrollEnd: true, preventOverlaps: true,  trigger: '#hero-section', start: 'top top', end: 'bottom top', scrub: 1 }
       });
       
       gsap.to('.hero-card-wrapper', {
         y: '15vh',
         ease: 'none',
-        scrollTrigger: { trigger: '#hero-section', start: 'top top', end: 'bottom top', scrub: 1 }
+        scrollTrigger: { fastScrollEnd: true, preventOverlaps: true,  trigger: '#hero-section', start: 'top top', end: 'bottom top', scrub: 1 }
       });
     });
 
@@ -171,9 +121,9 @@ export default function Hero({ dark }) {
         }}
       ></div>
       <div className="absolute inset-0 z-0 hidden md:block pointer-events-none">
-         <Canvas camera={{ position: [0, 0, 5], fov: 75 }}>
-           <Particles />
-         </Canvas>
+        <React.Suspense fallback={null}>
+          {!isMobile && <Scene />}
+        </React.Suspense>
       </div>
 
       {/* LAYER 1: Section Label */}
@@ -191,10 +141,10 @@ export default function Hero({ dark }) {
           </div>
         </div>
 
-        <h1 className="text-[clamp(2.5rem,8vw,10rem)] font-sans font-bold text-paper tracking-tighter leading-[0.9] -ml-[0.03em] mb-8 uppercase">
-          <div className="hero-line overflow-hidden w-fit" style={{ clipPath: 'inset(0 100% 0 0)' }}>Find internships</div>
-          <div className="hero-line overflow-hidden w-fit" style={{ clipPath: 'inset(0 100% 0 0)' }}>that actually</div>
-          <div className="hero-line overflow-hidden w-fit flex items-center" style={{ clipPath: 'inset(0 100% 0 0)' }}>
+        <h1 className="font-sans font-bold text-paper tracking-tighter leading-[0.9] -ml-[0.03em] mb-8 uppercase max-w-[75vw]">
+          <div className="hero-line overflow-hidden w-fit text-display" style={{ clipPath: 'inset(0 100% 0 0)' }}>Find internships</div>
+          <div className="hero-line overflow-hidden w-fit text-display" style={{ clipPath: 'inset(0 100% 0 0)' }}>that actually</div>
+          <div className="hero-line overflow-hidden w-fit flex items-center text-display" style={{ clipPath: 'inset(0 100% 0 0)' }}>
             <span className="relative inline-block px-3 pb-1 -ml-3 mr-3 text-ink">
               <span className="hero-yellow-bg absolute inset-0 bg-yellow -z-10 px-3 pb-1 transform origin-left scale-x-0"></span>
               fit
@@ -222,9 +172,12 @@ export default function Hero({ dark }) {
       </div>
 
       {/* RIGHT SIDE: Floating Data Card */}
+      <style>{`
+        @media (max-width: 1199px) { .match-card { display: none !important; } }
+      `}</style>
       <div className="hero-card-wrapper absolute right-8 lg:right-16 top-1/2 -translate-y-1/2 z-20 hidden lg:block">
         <div className="hero-card opacity-0">
-          <div className="hero-card-float bg-paper/[0.03] border border-paper/10 backdrop-blur-[20px] w-[280px] p-6 text-paper flex flex-col gap-4 shadow-2xl">
+          <div className="hero-card-float bg-paper/[0.03] border border-paper/10 backdrop-blur-[20px] p-6 text-paper flex flex-col gap-4 shadow-2xl match-card" style={{ width: "clamp(220px, 20vw, 300px)" }}>
             
             <div className="flex justify-between items-center font-mono text-[0.65rem] text-cyan tracking-widest uppercase">
               <span className="flex items-center gap-2">

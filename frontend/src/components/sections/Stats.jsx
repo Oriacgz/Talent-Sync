@@ -6,7 +6,7 @@ import PaperTear from '../ui/PaperTear';
 export default function Stats({ dark }) {
 
   return (
-    <section id="stats" className="relative bg-paper text-ink py-[60px] md:py-[80px] lg:py-[120px] overflow-hidden w-full">
+    <section id="stats" className="relative bg-paper text-ink overflow-hidden w-full" style={{ padding: 'clamp(60px, 8vw, 140px) 0' }}>
       
       <span aria-hidden="true" style={{ fontSize: "min(18vw, 220px)", opacity: 0.028, position: "absolute", right: "-2vw", top: "50%", transform: "translateY(-50%)", pointerEvents: "none", userSelect: "none", zIndex: 0, color: "currentColor" }}>
         05
@@ -19,17 +19,17 @@ export default function Stats({ dark }) {
 
       <SectionLabel label="05 / METRICS" className="left-8 top-32 lg:top-48 opacity-20 hidden md:block z-20" />
 
-      <div className="w-full relative z-10 mx-auto px-4 md:px-[6vw] lg:px-[8vw]">
+      <div className="container relative z-10">
         
         {/* TOP RULE */}
         <div className="w-full h-[4px] bg-ink mb-12 lg:mb-20"></div>
 
         {/* STATS ROW - FULL BLEED EDITORIAL */}
-        <div className="w-full flex flex-col md:flex-row items-stretch justify-between px-4 lg:px-12 gap-8 md:gap-0">
+        <div className="w-full grid grid-cols-1 min-[600px]:grid-cols-2 min-[900px]:grid-cols-4 gap-8">
           
           {/* Stat 1 */}
           <div className="flex-1 flex flex-col items-center md:items-start md:pl-4 lg:pl-12 py-4 relative group">
-            <div className="font-sans text-[clamp(4.5rem,10vw,8rem)] font-bold tracking-[-0.04em] leading-none text-ink flex items-end">
+            <div className="font-sans text-[clamp(2.5rem,6vw,8rem)] font-bold tracking-[-0.04em] leading-none text-ink flex items-end">
               <BigNumber end={10} suffix=",000" />
               <span className="text-yellow ml-1">+</span>
             </div>
@@ -42,7 +42,7 @@ export default function Stats({ dark }) {
 
           {/* Stat 2 */}
           <div className="flex-1 flex flex-col items-center md:items-start md:pl-8 lg:pl-16 py-4 relative group">
-            <div className="font-sans text-[clamp(4.5rem,10vw,8rem)] font-bold tracking-[-0.04em] leading-none text-yellow flex items-end">
+            <div className="font-sans text-[clamp(2.5rem,6vw,8rem)] font-bold tracking-[-0.04em] leading-none text-yellow flex items-end">
               <BigNumber end={87} />
               <span className="text-ink ml-1">%</span>
             </div>
@@ -55,7 +55,7 @@ export default function Stats({ dark }) {
 
           {/* Stat 3 */}
           <div className="flex-1 flex flex-col items-center md:items-start md:pl-8 lg:pl-16 py-4 relative group">
-            <div className="font-sans text-[clamp(4.5rem,10vw,8rem)] font-bold tracking-[-0.04em] leading-none text-ink flex items-end">
+            <div className="font-sans text-[clamp(2.5rem,6vw,8rem)] font-bold tracking-[-0.04em] leading-none text-ink flex items-end">
               <BigNumber end={500} />
               <span className="text-yellow ml-1">+</span>
             </div>
@@ -68,7 +68,7 @@ export default function Stats({ dark }) {
 
           {/* Stat 4 */}
           <div className="flex-1 flex flex-col items-center md:items-start md:pl-8 lg:pl-16 py-4 relative group">
-            <div className="font-sans text-[clamp(4.5rem,10vw,8rem)] font-bold tracking-[-0.04em] leading-none text-yellow flex items-end">
+            <div className="font-sans text-[clamp(2.5rem,6vw,8rem)] font-bold tracking-[-0.04em] leading-none text-yellow flex items-end">
               <span className="text-ink mr-2">&lt;</span>
               <BigNumber end={2} />
               <span className="text-ink ml-1">s</span>

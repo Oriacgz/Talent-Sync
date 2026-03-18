@@ -24,7 +24,7 @@ const Gauge = ({ label, value, sub, colorClass, percent }) => {
           duration: 1.5,
           ease: 'power3.out',
           transformOrigin: 'left',
-          scrollTrigger: {
+          scrollTrigger: { fastScrollEnd: true, preventOverlaps: true, 
             trigger: barRef.current,
             start: 'top 85%',
           }
@@ -38,7 +38,7 @@ const Gauge = ({ label, value, sub, colorClass, percent }) => {
            val: value,
            duration: 1.5,
            ease: 'power3.out',
-           scrollTrigger: {
+           scrollTrigger: { fastScrollEnd: true, preventOverlaps: true, 
              trigger: ValueTarget.current,
              start: 'top 85%'
            },
@@ -122,7 +122,7 @@ export default function Fairness({ dark }) {
           strokeDashoffset: 0,
           duration: 1,
           ease: 'power2.out',
-          scrollTrigger: {
+          scrollTrigger: { fastScrollEnd: true, preventOverlaps: true, 
             trigger: '.comparison-container',
             start: 'top 60%',
           }
@@ -138,7 +138,7 @@ export default function Fairness({ dark }) {
           rotate: 3,
           duration: 0.5,
           ease: 'back.out(1.7)',
-          scrollTrigger: {
+          scrollTrigger: { fastScrollEnd: true, preventOverlaps: true, 
             trigger: stampRef.current,
             start: 'top 80%',
           }
@@ -177,7 +177,7 @@ export default function Fairness({ dark }) {
   }, []);
 
   return (
-    <section id="fairness" ref={sectionRef} className="relative bg-ink text-paper w-full">
+    <section id="fairness" ref={sectionRef} className="relative bg-ink text-paper w-full" style={{ padding: "clamp(60px, 8vw, 140px) clamp(20px, 6vw, 100px)" }}>
       
       <span aria-hidden="true" style={{ fontSize: "min(18vw, 220px)", opacity: 0.028, position: "absolute", right: "-2vw", top: "50%", transform: "translateY(-50%)", pointerEvents: "none", userSelect: "none", zIndex: 0, color: "currentColor" }}>
         06
@@ -188,10 +188,10 @@ export default function Fairness({ dark }) {
         <PaperTear topColor="#FAF9F6" bottomColor="#0A0A0A" />
       </div>
 
-      <div className="py-[60px] md:py-[80px] lg:py-[120px] relative overflow-hidden pl-0">
+      <div className="relative overflow-hidden pl-0">
         <SectionLabel label="06 / FAIRNESS & IMPACT" dark={true} className="left-8 top-48 lg:top-64 opacity-20 hidden md:block z-20" />
 
-        <div className="w-full max-w-[1240px] px-[5vw] md:px-[6vw] lg:px-[8vw] mx-auto relative z-10 flex flex-col">
+        <div className="container relative mx-auto mx-auto relative z-10 flex flex-col">
           
           {/* HEADER */}
           <div className="flex flex-col items-start gap-4 mb-[40px] md:mb-[60px] lg:mb-[80px] lg:ml-24">
@@ -200,7 +200,7 @@ export default function Fairness({ dark }) {
             <h2 className="font-sans font-bold text-[clamp(3.5rem,7vw,6.5rem)] leading-[0.9] tracking-tighter mt-4 max-w-4xl">
               <div className="block text-paper">Fairness isn't optional.</div>
               <div className="block mt-2">
-                It's the <span className="bg-yellow text-ink px-[12px] py-[2px] leading-none inline-block -rotate-1 rounded-sm">algorithm.</span>
+                It's the <span className="bg-yellow text-ink px-[12px] leading-none inline-block -rotate-1 rounded-sm">algorithm.</span>
               </div>
             </h2>
             
@@ -339,7 +339,7 @@ export default function Fairness({ dark }) {
       </div>
 
       {/* TEAM SECTION (Nested inside Fairness background) */}
-      <div className="w-full border-t border-paper/10 py-[80px] px-8 md:px-[8vw] bg-ink">
+      <div className="w-full border-t border-paper/10 px-8 md:px-[8vw] bg-ink">
         <div className="max-w-[1400px] mx-auto">
           
           <div className="font-mono text-[0.65rem] uppercase tracking-[0.2em] opacity-30 mb-8 font-bold text-paper relative pl-0">

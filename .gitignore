@@ -1,0 +1,11 @@
+__pycache__/
+*.pyc
+.env
+venv/
+*.pkl
+node_modules/
+dist/
+.env.local
+*.sqlite3
+ml_training/data/raw/*.csv
+ml_training/data/processed/*.npy

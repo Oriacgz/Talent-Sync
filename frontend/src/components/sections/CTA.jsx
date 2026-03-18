@@ -14,7 +14,7 @@ export default function CTA({ dark }) {
     const ctx = gsap.context(() => {
       
       const tl = gsap.timeline({
-        scrollTrigger: {
+        scrollTrigger: { fastScrollEnd: true, preventOverlaps: true, 
           trigger: sectionRef.current,
           start: 'top 60%'
         }
@@ -44,7 +44,7 @@ export default function CTA({ dark }) {
   }, []);
 
   return (
-    <section id="cta" ref={sectionRef} className="relative bg-ink text-paper flex items-center justify-center w-full min-h-screen">
+    <section id="cta" ref={sectionRef} className="relative bg-ink text-paper flex items-center justify-center w-full min-h-screen" style={{ padding: "clamp(60px, 8vw, 140px) clamp(20px, 6vw, 100px)" }}>
       
       {/* 08 Mark */}
       <span aria-hidden="true" style={{ position: "absolute", right: "-2vw", top: "50%", transform: "translateY(-50%)", fontSize: "min(18vw, 220px)", fontFamily: "Space Mono", fontWeight: 700, color: "currentColor", opacity: 0.028, pointerEvents: "none", lineHeight: 1, userSelect: "none" }}>
@@ -62,7 +62,7 @@ export default function CTA({ dark }) {
         style={{ backgroundImage: 'repeating-linear-gradient(-45deg, transparent, transparent 40px, rgba(255,225,53,0.015) 40px, rgba(255,225,53,0.015) 41px)' }}
       ></div>
 
-      <div className="w-full max-w-[800px] px-[5vw] md:px-[6vw] lg:px-[8vw] py-[60px] md:py-[80px] lg:py-[120px] flex flex-col items-center text-center relative z-10">
+      <div className="w-full max-w-[800px] flex flex-col items-center text-center relative z-10">
         
         <div className="font-mono text-sm uppercase tracking-[0.3em] opacity-30 font-bold mb-8">
           READY?

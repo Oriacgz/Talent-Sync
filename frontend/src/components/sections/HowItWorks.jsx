@@ -161,9 +161,9 @@ export default function HowItWorks({ dark }) {
             </div>
             <div className="font-sans font-bold text-sm text-paper tracking-wide">Data Analyst</div>
             <div className="flex flex-wrap justify-center gap-1 mt-1">
-              <span className="px-2 py-[2px] border border-cyan/40 text-cyan font-mono text-[0.5rem] uppercase">Python</span>
-              <span className="px-2 py-[2px] border border-cyan/40 text-cyan font-mono text-[0.5rem] uppercase">SQL</span>
-              <span className="px-2 py-[2px] border border-cyan/40 text-cyan font-mono text-[0.5rem] uppercase">ML</span>
+              <span className="px-2 border border-cyan/40 text-cyan font-mono text-[0.5rem] uppercase">Python</span>
+              <span className="px-2 border border-cyan/40 text-cyan font-mono text-[0.5rem] uppercase">SQL</span>
+              <span className="px-2 border border-cyan/40 text-cyan font-mono text-[0.5rem] uppercase">ML</span>
             </div>
           </div>
           <div className="flex items-center gap-2 font-mono text-[0.65rem] text-[#00F5D4] uppercase tracking-widest animate-[fadeIn_0.4s_ease-out_forwards_0.5s] opacity-0 font-bold">
@@ -182,7 +182,7 @@ export default function HowItWorks({ dark }) {
 
       // 1. BOOK FLIP
       const flipTl = gsap.timeline({
-        scrollTrigger: {
+        scrollTrigger: { fastScrollEnd: true, preventOverlaps: true, 
           trigger: '.book-container',
           start: 'center center',
           once: true
@@ -216,7 +216,7 @@ export default function HowItWorks({ dark }) {
       const totalScroll = 200; // vh
       
       const pinTl = gsap.timeline({
-        scrollTrigger: {
+        scrollTrigger: { fastScrollEnd: true, preventOverlaps: true, 
           trigger: timelineTriggerRef.current,
           start: 'top top',
           end: `+=${totalScroll}%`,
@@ -250,7 +250,7 @@ export default function HowItWorks({ dark }) {
   }, [activeStep, stepsData.length]);
 
   return (
-    <section ref={sectionRef} id="how-it-works" className="relative">
+    <section ref={sectionRef} id="how-it-works" className="relative" style={{ padding: "clamp(60px, 8vw, 140px) clamp(20px, 6vw, 100px)" }}>
       <style dangerouslySetInnerHTML={{__html: `
         @keyframes fillBar { from { transform: scaleX(0); } to { transform: scaleX(1); } }
         @keyframes slideInRight { from { transform: translateX(30px); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
@@ -266,7 +266,7 @@ export default function HowItWorks({ dark }) {
         <PaperTear topColor="#0A0A0A" bottomColor="#FAF9F6" flip={true} />
       </div>
 
-      <div className="bg-paper text-ink py-[60px] md:py-[80px] lg:py-[120px] min-h-screen relative overflow-hidden">
+      <div className="bg-paper text-ink min-h-screen relative overflow-hidden">
         
         <span aria-hidden="true" style={{ fontSize: "min(18vw, 220px)", opacity: 0.028, position: "absolute", right: "-2vw", top: "50%", transform: "translateY(-50%)", pointerEvents: "none", userSelect: "none", zIndex: 0, color: "currentColor" }}>
           03
@@ -274,7 +274,7 @@ export default function HowItWorks({ dark }) {
         
         <SectionLabel label="03 / HOW IT WORKS" className="left-8 top-48 lg:top-64 opacity-20 hidden md:block z-20" />
 
-        <div className="max-w-[1240px] mx-auto px-[5vw] md:px-[6vw] lg:px-[8vw] relative z-10">
+        <div className="container mx-auto relative z-10">
           {/* HEADER */}
           <div className="flex flex-col items-center text-center gap-6 mb-[40px] md:mb-[60px] lg:mb-[80px]">
             <Badge label="THE PROCESS" color="ink" />
@@ -332,8 +332,8 @@ export default function HowItWorks({ dark }) {
 
     {/* PINNED TIMELINE SEQUENCE */}
       <div className="bg-paper text-ink relative" ref={timelineTriggerRef}>
-        <div className="min-h-screen w-full flex flex-col justify-center py-[60px] md:py-[80px] lg:py-[120px]">
-          <div className="w-full px-[5vw] md:px-[6vw] lg:px-[8vw] flex flex-col items-center lg:flex-row justify-between gap-12 max-w-[1800px] mx-auto">
+        <div className="min-h-screen w-full flex flex-col justify-center ">
+          <div className="w-full flex flex-col items-center lg:flex-row justify-between gap-12 max-w-[1800px] mx-auto">
             
             {/* LEFT: Nodes */}
             <div className="w-full lg:w-[60%] xl:w-[65%] relative h-auto md:h-[400px] flex md:items-center py-12 md:py-0">
@@ -358,7 +358,7 @@ export default function HowItWorks({ dark }) {
               </div>
 
               {/* Node Placements */}
-              <div className="relative md:absolute w-full flex flex-col md:flex-row justify-between items-start md:items-center z-10 px-0 md:px-4 gap-8 md:gap-0">
+              <div className="relative md:absolute w-full flex flex-col md:flex-row justify-between items-start md:items-center z-10 px-0 md:px-12 lg:px-16 gap-8 md:gap-0">
                 {stepsData.map((step, i) => {
                   const isActive = i === activeStep;
                   const isPast = i < activeStep;
@@ -369,32 +369,32 @@ export default function HowItWorks({ dark }) {
                       
                       {/* Top content (desktop) */}
                       {isTopDown && (
-                        <div className={`hidden md:block absolute bottom-[48px] w-[140px] max-w-[140px] text-center transition-all duration-300 ${isActive ? 'opacity-100 -translate-y-2' : 'opacity-70'}`}>
-                          <div className="font-sans font-bold text-[0.875rem] uppercase mb-1">{step.title}</div>
-                          <div className="font-mono text-[0.75rem] text-ink/70 leading-tight">{step.top}</div>
+                        <div className={`hidden md:block absolute bottom-[52px] w-[110px] max-w-[110px] text-center transition-all duration-300 ${isActive ? 'opacity-100 -translate-y-2' : 'opacity-70'}`}>
+                          <div className="font-sans font-bold text-[0.7rem] lg:text-[0.8rem] uppercase mb-1 leading-tight">{step.title}</div>
+                          <div className="font-mono text-[0.6rem] lg:text-[0.65rem] text-ink/70 leading-tight">{step.top}</div>
                         </div>
                       )}
                       
                       {/* Node Circle */}
-                      <div className={`w-16 h-16 shrink-0 rounded-full border-[3px] flex items-center justify-center transition-colors duration-300 ${isPast ? 'bg-ink border-ink text-paper' : isActive ? 'bg-yellow border-ink text-ink' : 'bg-paper border-ink/20 text-ink/40'}`}>
+                      <div className={`w-12 h-12 lg:w-16 lg:h-16 shrink-0 rounded-full border-[3px] flex items-center justify-center transition-colors duration-300 ${isPast ? 'bg-ink border-ink text-paper' : isActive ? 'bg-yellow border-ink text-ink' : 'bg-paper border-ink/20 text-ink/40'}`}>
                         {isPast ? (
-                          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
                         ) : (
-                          <div className={`w-6 h-6 ${isActive ? 'animate-pulse' : ''}`}>{step.icon}</div>
+                          <div className={`w-5 h-5 lg:w-6 lg:h-6 ${isActive ? 'animate-pulse' : ''}`}>{step.icon}</div>
                         )}
                       </div>
 
                       {/* Right content (mobile) */}
                       <div className={`md:hidden ml-6 text-left transition-all duration-300 ${isActive ? 'opacity-100 translate-x-2' : 'opacity-70'}`}>
-                        <div className="font-sans font-bold text-[1rem] uppercase mb-1">{step.title}</div>
-                        <div className="font-mono text-[0.75rem] text-ink/70 leading-tight">{step.bottom}</div>
+                        <div className="font-sans font-bold text-[0.9rem] uppercase mb-1">{step.title}</div>
+                        <div className="font-mono text-[0.7rem] text-ink/70 leading-tight">{step.bottom}</div>
                       </div>
 
                       {/* Bottom content (desktop) */}
                       {!isTopDown && (
-                        <div className={`hidden md:block absolute top-[48px] w-[140px] max-w-[140px] text-center transition-all duration-300 ${isActive ? 'opacity-100 translate-y-2' : 'opacity-70'}`}>
-                          <div className="font-sans font-bold text-[0.875rem] uppercase mb-1">{step.title}</div>
-                          <div className="font-mono text-[0.75rem] text-ink/70 leading-tight">{step.bottom}</div>
+                        <div className={`hidden md:block absolute top-[52px] w-[110px] max-w-[110px] text-center transition-all duration-300 ${isActive ? 'opacity-100 translate-y-2' : 'opacity-70'}`}>
+                          <div className="font-sans font-bold text-[0.7rem] lg:text-[0.8rem] uppercase mb-1 leading-tight">{step.title}</div>
+                          <div className="font-mono text-[0.6rem] lg:text-[0.65rem] text-ink/70 leading-tight">{step.bottom}</div>
                         </div>
                       )}
                       

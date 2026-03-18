@@ -15,7 +15,7 @@ export default function ForWho({ dark }) {
     const ctx = gsap.context(() => {
       // Entrance animations
       const tl = gsap.timeline({
-        scrollTrigger: {
+        scrollTrigger: { fastScrollEnd: true, preventOverlaps: true, 
           trigger: sectionRef.current,
           start: 'top 70%',
         }
@@ -37,13 +37,13 @@ export default function ForWho({ dark }) {
   }, []);
 
   return (
-    <section id="for-who" ref={sectionRef} className="bg-paper text-ink border-y-[4px] border-ink flex items-center py-[60px] md:py-[80px] lg:py-[120px] relative overflow-hidden">
+    <section id="for-who" ref={sectionRef} className="bg-paper text-ink border-y-[4px] border-ink flex items-center relative overflow-hidden" style={{ padding: "clamp(60px, 8vw, 140px) clamp(20px, 6vw, 100px)" }}>
       
       <span aria-hidden="true" style={{ fontSize: "min(18vw, 220px)", opacity: 0.028, position: "absolute", right: "-2vw", top: "50%", transform: "translateY(-50%)", pointerEvents: "none", userSelect: "none", zIndex: 0, color: "currentColor" }}>
         07
       </span>
 
-      <div className="w-full max-w-[1400px] px-[5vw] md:px-[6vw] lg:px-[8vw] mx-auto flex flex-col md:flex-row relative z-10">
+      <div className="w-full max-w-[1400px] mx-auto flex flex-col md:flex-row relative z-10">
         
         {/* Mobile Splitter (only visible on small screens) */}
         <div className="md:hidden w-full h-[4px] bg-ink my-12 opacity-20"></div>

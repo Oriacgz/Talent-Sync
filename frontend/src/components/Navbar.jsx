@@ -1,42 +1,55 @@
 import React, { useEffect, useRef, useState } from 'react';
 import gsap from 'gsap';
-import ScrollTrigger from 'gsap/ScrollTrigger';
 import BrutalButton from './ui/BrutalButton';
+import { getLenis } from '../hooks/useLenis';
 
-gsap.registerPlugin(ScrollTrigger);
-
-export default function Navbar() {
+export default function Navbar({ dark, setDark }) {
   const navRef = useRef(null);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [activeHash, setActiveHash] = useState('');
+  const [activeHash, setActiveHash] = useState('home');
   const mobileMenuRef = useRef(null);
   const mobileLinksRef = useRef([]);
 
   const links = [
-    { name: 'HOME', href: '#home' },
-    { name: 'PROBLEM', href: '#problem' },
-    { name: 'HOW IT WORKS', href: '#how-it-works' },
-    { name: 'FEATURES', href: '#features' },
-    { name: 'IMPACT', href: '#impact' },
+    { name: 'HOME', id: 'home' },
+    { name: 'PROBLEM', id: 'problem' },
+    { name: 'HOW IT WORKS', id: 'how-it-works' },
+    { name: 'FEATURES', id: 'features' },
+    { name: 'IMPACT', id: 'impact' },
   ];
 
   useEffect(() => {
-    // Scroll behavior - compress height & add background
-    const nav = navRef.current;
-    
-    gsap.to(nav, {
-      scrollTrigger: {
-        trigger: document.body,
-        start: 'top top',
-        end: '80px top',
-        scrub: true,
-      },
-      backgroundColor: 'rgba(10,10,10,0.92)',
-      backdropFilter: 'blur(12px)',
-      borderBottom: '2px solid rgba(255,225,53,0.4)',
-      height: '64px',
-    });
+    let lastScrollY = 0;
+    let ticking = false;
 
+    const onScroll = () => {
+      lastScrollY = window.scrollY;
+      if (!ticking) {
+        requestAnimationFrame(() => {
+          if (lastScrollY > 80) {
+            gsap.to(navRef.current, {
+              backdropFilter: "blur(12px)",
+              backgroundColor: "rgba(10,10,10,0.92)",
+              duration: 0.3, ease: "power2.out"
+            });
+          } else {
+            gsap.to(navRef.current, {
+              backdropFilter: "blur(0px)",
+              backgroundColor: "transparent",
+              duration: 0.3
+            });
+          }
+          ticking = false;
+        });
+        ticking = true;
+      }
+    };
+
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
+
+  useEffect(() => {
     // Mobile menu animations
     if (mobileMenuOpen) {
       gsap.fromTo(mobileMenuRef.current, 
@@ -52,20 +65,56 @@ export default function Navbar() {
   }, [mobileMenuOpen]);
 
   useEffect(() => {
-    // Active section tracking
-    const observer = new IntersectionObserver((entries) => {
-      entries.forEach(entry => {
-        if (entry.isIntersecting) {
-          setActiveHash('#' + entry.target.id);
-        }
-      });
-    }, { threshold: 0.5 });
+    // Active section tracking with IntersectionObserver
+    const sectionIds = ["home","problem","how-it-works","features","impact"];
+    let observers = [];
 
-    const sections = document.querySelectorAll('section[id]');
-    sections.forEach(s => observer.observe(s));
+    const tryObserve = () => {
+      let missing = false;
+      sectionIds.forEach(id => {
+        if (!document.getElementById(id)) missing = true;
+      });
+
+      if (!missing && observers.length === 0) {
+        observers = sectionIds.map(id => {
+          const el = document.getElementById(id);
+          const obs = new IntersectionObserver(
+            ([entry]) => {
+              // threshold 0 with tight rootMargin acts as a horizontal tripwire
+              if (entry.isIntersecting) setActiveHash(id);
+            },
+            { threshold: 0, rootMargin: "-20% 0px -50% 0px" }
+          );
+          obs.observe(el);
+          return obs;
+        });
+      } else if (missing) {
+        // Re-poll if sections lazy-load via Suspense
+        setTimeout(tryObserve, 500);
+      }
+    };
+
+    tryObserve();
     
-    return () => observer.disconnect();
+    return () => {
+      observers.forEach(o => o.disconnect());
+    };
   }, []);
+
+  const scrollToSection = (id) => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    
+    // Use Lenis if available, else native
+    const lenis = getLenis();
+    if (lenis) {
+      lenis.scrollTo(el, { offset: -80, duration: 1.4 });
+    } else {
+      el.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+    
+    setMobileMenuOpen(false);
+  };
 
   const toggleMenu = () => setMobileMenuOpen(!mobileMenuOpen);
 
@@ -73,11 +122,11 @@ export default function Navbar() {
     <>
       <nav 
         ref={navRef}
-        className="fixed top-0 left-0 w-full h-[80px] z-[9000] flex justify-between items-center px-6 md:px-12 border-b border-[rgba(250,249,246,0.08)] bg-transparent"
+        className="fixed top-0 left-0 w-full h-[72px] z-[9000] flex justify-between items-center px-6 md:px-12 border-b border-[rgba(250,249,246,0.08)] bg-transparent"
       >
         {/* Left: Logo */}
-        <div className="flex items-center group cursor-pointer">
-          <span className="font-sans text-[2rem] font-black text-paper relative tracking-[-0.02em]">
+        <div className="flex items-center group cursor-pointer" onClick={() => scrollToSection('home')}>
+          <span className="font-sans font-black text-paper relative tracking-[-0.02em]" style={{ fontSize: 'clamp(1.25rem, 2vw, 1.75rem)' }}>
             <span className="highlight-word group-hover:after:w-full tracking-tighter flex items-center">
               TS<span className="inline-block w-[1.2rem] border-b-[3px] border-yellow mb-[0.2rem] ml-[0.1rem]"></span>
             </span>
@@ -85,31 +134,35 @@ export default function Navbar() {
         </div>
 
         {/* Center: Nav Links (Desktop) */}
-        <div className="hidden md:flex items-center gap-[40px]">
+        <div className="hidden min-[900px]:flex items-center" style={{ gap: 'clamp(20px, 2.5vw, 40px)' }}>
           {links.map((link, i) => {
-            const isActive = activeHash === link.href;
+            const isActive = activeHash === link.id;
             return (
-              <a 
+              <button 
                 key={i} 
-                href={link.href}
-                className={`relative font-mono text-[0.72rem] uppercase tracking-[0.18em] transition-colors duration-200 group ${isActive ? 'text-paper opacity-100' : 'text-paper/60 hover:text-paper hover:opacity-100'}`}
+                onClick={() => scrollToSection(link.id)}
+                className={`relative font-mono uppercase tracking-[0.18em] transition-colors duration-200 group ${isActive ? 'text-yellow opacity-100' : 'text-paper/50 hover:text-paper hover:opacity-100'}`}
+                style={{
+                  fontSize: 'clamp(0.6rem, 0.65vw, 0.75rem)',
+                  borderBottom: isActive ? "2px solid #FFE135" : "2px solid transparent",
+                  paddingBottom: "4px"
+                }}
               >
                 {link.name}
-                <span className={`absolute -bottom-1 left-0 h-[3px] bg-yellow transition-all duration-300 ${isActive ? 'w-full' : 'w-0 group-hover:w-full'}`}></span>
-              </a>
+              </button>
             );
           })}
         </div>
 
         {/* Right: Button & Hamburger */}
         <div className="flex items-center gap-6">
-          <BrutalButton variant="primary" className="hidden md:inline-flex shrink-0 border-ink px-6 py-3 text-[0.72rem]">
+          <BrutalButton variant="primary" className="hidden min-[900px]:inline-flex shrink-0 border-ink" style={{ padding: 'clamp(8px,0.6vw,12px) clamp(14px,1.2vw,24px)', fontSize: 'clamp(0.6rem, 0.65vw, 0.75rem)' }}>
             GET MATCHED &rarr;
           </BrutalButton>
           
           {/* Hamburger (Mobile) */}
           <button 
-            className="md:hidden flex flex-col justify-center items-center w-7 h-7 gap-[8px] z-[99999] relative"
+            className="min-[900px]:hidden flex flex-col justify-center items-center w-7 h-7 gap-[8px] z-[99999] relative"
             onClick={toggleMenu}
           >
             <span 
@@ -131,15 +184,14 @@ export default function Navbar() {
         >
           <div className="flex flex-col gap-6">
             {links.map((link, i) => (
-              <a 
+              <button 
                 key={i} 
-                href={link.href}
-                className="font-sans text-5xl font-bold text-paper tracking-tighter"
+                onClick={() => scrollToSection(link.id)}
+                className="font-sans text-5xl font-bold text-paper tracking-tighter text-left"
                 ref={el => mobileLinksRef.current[i] = el}
-                onClick={toggleMenu}
               >
                 {link.name}
-              </a>
+              </button>
             ))}
           </div>
           

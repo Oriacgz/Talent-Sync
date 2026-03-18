@@ -18,22 +18,47 @@
   --color-paper: #FAF9F6;
   --color-muted: #F0EDE8;
 
-  --font-size-display: clamp(3.5rem, 9vw, 10rem);
-  --font-size-display--line-height: 0.92;
-  --font-size-display--letter-spacing: -0.03em;
-
-  --font-size-headline: clamp(2rem, 5vw, 6rem);
-  --font-size-headline--line-height: 0.95;
-  --font-size-headline--letter-spacing: -0.02em;
-
-  --font-size-title: clamp(1.25rem, 2.5vw, 2.5rem);
-  --font-size-title--line-height: 1.1;
-
   --shadow-brutal: 4px 4px 0px #0A0A0A;
   --shadow-brutal-md: 6px 6px 0px #0A0A0A;
   --shadow-brutal-lg: 10px 10px 0px #0A0A0A;
   --shadow-brutal-y: 6px 6px 0px #FFE135;
   --shadow-brutal-inv: 4px 4px 0px #FAF9F6;
+}
+
+@layer components {
+  /* These clamp values work from 320px mobile to 2560px 4K */
+  .text-display {
+    font-size: clamp(2.25rem, 5.5vw, 7.5rem);
+    line-height: 0.92;
+    letter-spacing: -0.03em;
+  }
+
+  .text-headline {
+    font-size: clamp(1.75rem, 3.5vw, 5rem);
+    line-height: 0.95;
+    letter-spacing: -0.02em;
+  }
+
+  .text-title {
+    font-size: clamp(1.125rem, 1.8vw, 2.25rem);
+    line-height: 1.1;
+  }
+
+  .text-body {
+    font-size: clamp(0.875rem, 1vw, 1.125rem);
+    line-height: 1.65;
+  }
+
+  .text-mono-sm {
+    font-size: clamp(0.625rem, 0.7vw, 0.8rem);
+  }
+
+  .container {
+    width: 100%;
+    max-width: 1280px;
+    margin: 0 auto;
+    padding: 0 clamp(20px, 5vw, 80px);
+  }
 }
 
 @layer base {

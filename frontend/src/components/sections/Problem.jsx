@@ -22,7 +22,7 @@ export default function Problem({ dark }) {
       const words = gsap.utils.toArray('.problem-word');
       
       gsap.to(words, {
-        scrollTrigger: {
+        scrollTrigger: { fastScrollEnd: true, preventOverlaps: true, 
           trigger: textRef.current,
           start: 'top 60%',
           end: 'bottom 40%',
@@ -56,7 +56,7 @@ export default function Problem({ dark }) {
         {
           x: 0, opacity: 1, duration: 0.8, stagger: 0.15, ease: 'power3.out',
           onComplete: function() { gsap.set(this.targets(), { clearProps: 'willChange' }) },
-          scrollTrigger: {
+          scrollTrigger: { fastScrollEnd: true, preventOverlaps: true, 
             trigger: blocksRef.current[0],
             start: 'top 80%',
           }
@@ -71,7 +71,7 @@ export default function Problem({ dark }) {
           y: 0, opacity: 1, duration: 0.8, stagger: 0.08, ease: 'power3.out',
           rotation: i => rotations[i % rotations.length],
           onComplete: function() { gsap.set(this.targets(), { clearProps: 'willChange' }) },
-          scrollTrigger: {
+          scrollTrigger: { fastScrollEnd: true, preventOverlaps: true, 
             trigger: '.chaos-stack',
             start: 'top 70%',
           }
@@ -80,7 +80,7 @@ export default function Problem({ dark }) {
 
       // 4. Pink cross draw
       const crossTl = gsap.timeline({
-        scrollTrigger: {
+        scrollTrigger: { fastScrollEnd: true, preventOverlaps: true, 
           trigger: '.chaos-stack',
           start: 'top 50%',
         }
@@ -107,7 +107,7 @@ export default function Problem({ dark }) {
   const headline = "Traditional internship allocation is manual, biased, and leaves the best candidates invisible.".split(' ');
 
   return (
-    <section ref={sectionRef} id="problem" className="min-h-screen bg-paper text-ink relative py-[60px] md:py-[80px] lg:py-[120px] overflow-hidden flex flex-col justify-center">
+    <section ref={sectionRef} id="problem" className="min-h-screen bg-paper text-ink relative overflow-hidden flex flex-col justify-center" style={{ padding: 'clamp(60px, 8vw, 140px) 0' }}>
       
       <span aria-hidden="true" style={{ fontSize: "min(18vw, 220px)", opacity: 0.028, position: "absolute", right: "-2vw", top: "50%", transform: "translateY(-50%)", pointerEvents: "none", userSelect: "none", zIndex: 0, color: "currentColor" }}>
         01
@@ -115,7 +115,7 @@ export default function Problem({ dark }) {
       
       <SectionLabel label="01 / PROBLEM" className="left-8 top-32 lg:top-48 opacity-25" />
       
-      <div className="max-w-[1240px] w-full mx-auto px-[5vw] md:px-[6vw] lg:px-[8vw] md:pl-24 lg:pl-32 relative z-10 flex flex-col gap-12 md:gap-24">
+      <div className="container md:pl-24 lg:pl-32 relative z-10 flex flex-col gap-12 md:gap-24">
         
         {/* TOP HEADLINE AREA */}
         <div className="flex flex-col items-start gap-8 mb-[40px] md:mb-[60px] lg:mb-[80px]">

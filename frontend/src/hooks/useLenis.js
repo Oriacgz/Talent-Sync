@@ -8,7 +8,7 @@ let lenisInstance = null;
 
 export function useLenis() {
   useEffect(() => {
-    const isMobile = window.innerWidth < 768 || /Android|iPhone|iPad|touch/i.test(navigator.userAgent) || ('ontouchstart' in window);
+    const isMobile = window.innerWidth < 1024 || /Android|iPhone|iPad|touch/i.test(navigator.userAgent) || ('ontouchstart' in window);
     if (isMobile) return;
 
     const lenis = new Lenis({

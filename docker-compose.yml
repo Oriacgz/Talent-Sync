@@ -1,0 +1,24 @@
+version: "3.9"
+services:
+  backend:
+    build: ./backend
+    ports: ["8000:8000"]
+    env_file: ./backend/.env
+    depends_on: [db, ollama]
+    volumes: ["./backend:/app"]
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+  db:
+    image: postgres:16
+    environment:
+      POSTGRES_USER: talentsync
+      POSTGRES_PASSWORD: talentsync
+      POSTGRES_DB: talentsync
+    ports: ["5432:5432"]
+    volumes: ["postgres_data:/var/lib/postgresql/data"]
+  ollama:
+    image: ollama/ollama
+    ports: ["11434:11434"]
+    volumes: ["ollama_data:/root/.ollama"]
+volumes:
+  postgres_data:
+  ollama_data:
