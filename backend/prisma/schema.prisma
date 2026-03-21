@@ -1,0 +1,151 @@
+generator client {
+  provider             = "prisma-client-py"
+  interface            = "asyncio"
+  recursive_type_depth = 5
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  passwordHash String   @map("password_hash")
+  role         Role     @default(STUDENT)
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  studentProfile   StudentProfile?
+  recruiterProfile RecruiterProfile?
+
+  @@map("users")
+}
+
+model StudentProfile {
+  id                 String   @id @default(cuid())
+  userId             String   @unique @map("user_id")
+  fullName           String   @map("full_name")
+  college            String?
+  collegeTier        Int?     @map("college_tier")
+  gpa                Float?
+  backlogs           Int      @default(0)
+  branch             String?
+  degree             String?
+  graduationYear     Int?     @map("graduation_year")
+  skills             String[]
+  certifications     String[]
+  projects           String[]
+  experienceMonths   Int      @default(0) @map("experience_months")
+  preferredRoles     String[] @map("preferred_roles")
+  preferredLocations String[] @map("preferred_locations")
+  preferredDomain    String?  @map("preferred_domain")
+  resumeText         String?  @map("resume_text")
+  embeddingVector    Float[]  @map("embedding_vector")
+  createdAt          DateTime @default(now()) @map("created_at")
+  updatedAt          DateTime @updatedAt @map("updated_at")
+
+  user         User          @relation(fields: [userId], references: [id])
+  matchScores  MatchScore[]
+  applications Application[]
+
+  @@map("student_profiles")
+}
+
+model RecruiterProfile {
+  id          String   @id @default(cuid())
+  userId      String   @unique @map("user_id")
+  fullName    String   @map("full_name")
+  company     String?
+  designation String?
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  user        User         @relation(fields: [userId], references: [id])
+  jobPostings JobPosting[]
+
+  @@map("recruiter_profiles")
+}
+
+model JobPosting {
+  id                      String   @id @default(cuid())
+  recruiterId             String   @map("recruiter_id")
+  company                 String
+  companySize             String?  @map("company_size")
+  roleTitle               String   @map("role_title")
+  domain                  String?
+  workType                String?  @map("work_type")
+  location                String?
+  requiredSkills          String[] @map("required_skills")
+  preferredSkills         String[] @map("preferred_skills")
+  minGpa                  Float    @default(0) @map("min_gpa")
+  backlogAllowed          Boolean  @default(true) @map("backlog_allowed")
+  requiredExperienceMonths Int     @default(0) @map("required_experience_months")
+  stipendMonthly          Int?     @map("stipend_monthly")
+  durationMonths          Int?     @map("duration_months")
+  descriptionRaw          String?  @map("description_raw")
+  embeddingVector         Float[]  @map("embedding_vector")
+  isActive                Boolean  @default(true) @map("is_active")
+  createdAt               DateTime @default(now()) @map("created_at")
+  updatedAt               DateTime @updatedAt @map("updated_at")
+
+  recruiter    RecruiterProfile @relation(fields: [recruiterId], references: [id])
+  matchScores  MatchScore[]
+  applications Application[]
+
+  @@map("job_postings")
+}
+
+model MatchScore {
+  id                     String   @id @default(cuid())
+  studentId              String   @map("student_id")
+  jobId                  String   @map("job_id")
+  semanticScore          Float    @default(0) @map("semantic_score")
+  academicScore          Float    @default(0) @map("academic_score")
+  preferenceScore        Float    @default(0) @map("preference_score")
+  experienceScore        Float    @default(0) @map("experience_score")
+  skillGapScore          Float    @default(0) @map("skill_gap_score")
+  certificationBonus     Float    @default(0) @map("certification_bonus")
+  githubActivityScore    Float    @default(0) @map("github_activity_score")
+  backlogPenalty         Float    @default(0) @map("backlog_penalty")
+  hybridScore            Float    @default(0) @map("hybrid_score")
+  fairnessCorrectedScore Float    @default(0) @map("fairness_corrected_score")
+  shapValues             Json?    @map("shap_values")
+  rankInJob              Int?     @map("rank_in_job")
+  createdAt              DateTime @default(now()) @map("created_at")
+
+  student StudentProfile @relation(fields: [studentId], references: [id])
+  job     JobPosting     @relation(fields: [jobId], references: [id])
+
+  @@unique([studentId, jobId])
+  @@map("match_scores")
+}
+
+model Application {
+  id        String            @id @default(cuid())
+  studentId String            @map("student_id")
+  jobId     String            @map("job_id")
+  status    ApplicationStatus @default(APPLIED)
+  appliedAt DateTime          @default(now()) @map("applied_at")
+  updatedAt DateTime          @updatedAt @map("updated_at")
+
+  student StudentProfile @relation(fields: [studentId], references: [id])
+  job     JobPosting     @relation(fields: [jobId], references: [id])
+
+  @@unique([studentId, jobId])
+  @@map("applications")
+}
+
+enum Role {
+  STUDENT
+  RECRUITER
+  ADMIN
+}
+
+enum ApplicationStatus {
+  APPLIED
+  SHORTLISTED
+  REJECTED
+  HIRED
+}

@@ -9,3 +9,6 @@ dist/
 *.sqlite3
 ml_training/data/raw/*.csv
 ml_training/data/processed/*.npy
+backend/prisma/__pycache__/
+backend/prisma/*.py
+backend/prisma/*.pyi

@@ -1,12 +1,12 @@
 # WHO WRITES THIS: Backend developer
 # WHAT THIS DOES: FastAPI app entry point. Registers CORS, rate limiter,
 #                 all routers. On startup: creates DB tables + loads SBERT model.
-# DEPENDS ON: all api routers, config, init_db, rate_limit middleware
+# DEPENDS ON: all api routers, config, Prisma db client
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.config import settings
-from app.db.init_db import init_db
+from app.db.database import prisma
 from app.api import auth, students, recruiters, jobs, matches
 from app.api import applications, chatbot, analytics
 
@@ -26,9 +26,14 @@ app.include_router(chatbot.router)
 app.include_router(analytics.router)
 
 @app.on_event("startup")
-def startup():
-    init_db()
+async def startup():
+    await prisma.connect()
     # TODO: from app.ml.encoder import load_model; load_model()
+
+
+@app.on_event("shutdown")
+async def shutdown():
+    await prisma.disconnect()
 
 @app.get("/health")
 def health():

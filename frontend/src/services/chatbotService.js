@@ -1,6 +1,6 @@
 /*
  * WHO WRITES THIS: Frontend developer
- * WHAT THIS DOES: Send chat message to Ollama LLM via backend,
+ * WHAT THIS DOES: Send chat message to Gemini-backed chatbot via backend,
  *                 reset chat session
  * DEPENDS ON: api.js
  */

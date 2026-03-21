@@ -1,20 +1,8 @@
-# WHO WRITES THIS: Backend developer
-# WHAT THIS DOES: Creates SQLAlchemy engine and session.
-#                 get_db() is a FastAPI dependency injected into every route.
-# DEPENDS ON: sqlalchemy, config.py
+from prisma import Prisma
 
-from sqlalchemy import create_engine
-from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import sessionmaker
-from app.config import settings
+# Single Prisma client instance used across the entire app.
+prisma = Prisma()
 
-engine = create_engine(settings.DATABASE_URL)
-SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
-Base = declarative_base()
 
-def get_db():
-    db = SessionLocal()
-    try:
-        yield db
-    finally:
-        db.close()
+def get_prisma() -> Prisma:
+    return prisma
