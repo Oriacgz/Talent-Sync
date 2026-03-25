@@ -9,11 +9,13 @@ import Badge from '../ui/Badge';
 import BrutalButton from '../ui/BrutalButton';
 import SectionLabel from '../ui/SectionLabel';
 import PaperTear from '../ui/PaperTear';
+import { useNavigate } from 'react-router-dom';
 
 gsap.registerPlugin(ScrollTrigger);
 
 
 export default function Hero({ dark }) {
+  const navigate = useNavigate();
   useEffect(() => {
     const handleLoaderDone = () => {
       const tl = gsap.timeline();
@@ -160,7 +162,7 @@ export default function Hero({ dark }) {
         <div className="flex flex-col items-start gap-2">
           <div className="flex flex-wrap gap-4 items-center">
             <div className="hero-cta opacity-0">
-              <BrutalButton variant="primary" size="lg" surface="dark" className="shadow-brutal-y border-ink">GET MATCHED &rarr;</BrutalButton>
+              <BrutalButton variant="primary" size="lg" surface="dark" className="shadow-brutal-y border-ink" onClick={() => navigate('/login')}>GET MATCHED &rarr;</BrutalButton>
             </div>
             <div className="hero-cta opacity-0">
               <BrutalButton variant="ghost" size="lg" surface="dark" className="border-paper text-paper">SEE HOW IT WORKS</BrutalButton>

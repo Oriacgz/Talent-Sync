@@ -7,10 +7,13 @@
  * DEPENDS ON: react-router-dom, authStore, all page components
  */
 import { createBrowserRouter, RouterProvider } from "react-router-dom";
+import LoginPage from "../pages/LoginPage";
+import RegisterPage from "../pages/RegisterPage";
+
 const router = createBrowserRouter([
   { path: "/", element: <div>Landing</div> },
-  { path: "/login", element: <div>Login</div> },
-  { path: "/register", element: <div>Register</div> },
+  { path: "/login", element: <LoginPage /> },
+  { path: "/register", element: <RegisterPage /> },
 ]);
 export default function AppRouter() {
   return <RouterProvider router={router} />;

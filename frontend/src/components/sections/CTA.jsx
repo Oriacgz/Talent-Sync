@@ -3,11 +3,13 @@ import gsap from 'gsap';
 import ScrollTrigger from 'gsap/ScrollTrigger';
 import BrutalButton from '../ui/BrutalButton';
 import PaperTear from '../ui/PaperTear';
+import { useNavigate } from 'react-router-dom';
 
 gsap.registerPlugin(ScrollTrigger);
 
 export default function CTA({ dark }) {
   const sectionRef = useRef(null);
+  const navigate = useNavigate();
   
   useEffect(() => {
     const rv = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -84,7 +86,7 @@ export default function CTA({ dark }) {
         </p>
 
         <div className="flex flex-col sm:flex-row items-center gap-4 mt-12 w-full sm:w-auto">
-          <BrutalButton variant="primary" size="lg" className="w-full sm:w-auto font-bold bg-yellow text-ink border-ink hover:bg-yellow shadow-[4px_4px_0px_#0A0A0A] hover:shadow-[6px_6px_0px_#0A0A0A]">
+          <BrutalButton variant="primary" size="lg" className="w-full sm:w-auto font-bold bg-yellow text-ink border-ink hover:bg-yellow shadow-[4px_4px_0px_#0A0A0A] hover:shadow-[6px_6px_0px_#0A0A0A]" onClick={() => navigate('/login')}>
             GET STARTED &rarr;
           </BrutalButton>
         </div>

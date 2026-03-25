@@ -2,9 +2,22 @@ __pycache__/
 *.pyc
 .env
 venv/
+backend/venv/
+.venv/
+**/.venv/
+*.pyo
+*.pyd
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.ipynb_checkpoints/
 *.pkl
 node_modules/
+backend/node_modules/
+frontend/node_modules/
 dist/
+build/
+.turbo/
 .env.local
 *.sqlite3
 ml_training/data/raw/*.csv
@@ -12,3 +25,4 @@ ml_training/data/processed/*.npy
 backend/prisma/__pycache__/
 backend/prisma/*.py
 backend/prisma/*.pyi
+.qodo/

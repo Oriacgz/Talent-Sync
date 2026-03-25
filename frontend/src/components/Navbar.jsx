@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import gsap from 'gsap';
 import BrutalButton from './ui/BrutalButton';
 import { getLenis } from '../hooks/useLenis';
+import { useNavigate } from 'react-router-dom';
 
 export default function Navbar({ dark, setDark }) {
   const navRef = useRef(null);
@@ -9,6 +10,7 @@ export default function Navbar({ dark, setDark }) {
   const [activeHash, setActiveHash] = useState('home');
   const mobileMenuRef = useRef(null);
   const mobileLinksRef = useRef([]);
+  const navigate = useNavigate();
 
   const links = [
     { name: 'HOME', id: 'home' },
@@ -156,7 +158,7 @@ export default function Navbar({ dark, setDark }) {
 
         {/* Right: Button & Hamburger */}
         <div className="flex items-center gap-6">
-          <BrutalButton variant="primary" className="hidden min-[900px]:inline-flex shrink-0 border-ink" style={{ padding: 'clamp(8px,0.6vw,12px) clamp(14px,1.2vw,24px)', fontSize: 'clamp(0.6rem, 0.65vw, 0.75rem)' }}>
+          <BrutalButton variant="primary" className="hidden min-[900px]:inline-flex shrink-0 border-ink" style={{ padding: 'clamp(8px,0.6vw,12px) clamp(14px,1.2vw,24px)', fontSize: 'clamp(0.6rem, 0.65vw, 0.75rem)' }} onClick={() => navigate('/login')}>
             GET MATCHED &rarr;
           </BrutalButton>
           
@@ -196,7 +198,7 @@ export default function Navbar({ dark, setDark }) {
           </div>
           
           <div className="mt-16" ref={el => mobileLinksRef.current[links.length] = el}>
-            <BrutalButton variant="primary" className="w-full py-4 text-lg">
+            <BrutalButton variant="primary" className="w-full py-4 text-lg" onClick={() => { setMobileMenuOpen(false); navigate('/login'); }}>
               GET MATCHED &rarr;
             </BrutalButton>
           </div>

@@ -19,4 +19,5 @@ class Settings(BaseSettings):
     CORS_ORIGINS: list = ["http://localhost:5173"]
     class Config:
         env_file = ".env"
+        extra = "ignore"
 settings = Settings()
