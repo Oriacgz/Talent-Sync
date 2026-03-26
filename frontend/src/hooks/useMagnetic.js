@@ -5,6 +5,10 @@ export function useMagnetic(strength = 0.35) {
   const ref = useRef(null);
 
   useEffect(() => {
+    if (strength <= 0) {
+      return undefined;
+    }
+
     const el = ref.current;
     if (!el) return;
 
