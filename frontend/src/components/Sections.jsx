@@ -1,8 +1,7 @@
 import React from 'react';
-import BigNumber from './ui/BigNumber';
 import BrutalButton from './ui/BrutalButton';
 
-export function Hero({ dark }) { 
+export function Hero() {
   return (
     <section className="min-h-screen flex items-center justify-center p-8 relative">
       <div className="grid-overlay"></div>
@@ -13,14 +12,14 @@ export function Hero({ dark }) {
     </section>
   ); 
 }
-export function DashboardPreview({ dark }) { 
+export function DashboardPreview() {
   return (
     <section className="min-h-screen relative p-8 md:p-16 bg-ink text-paper">
       <h2 className="text-headline mb-8 font-bold highlight-word active">PREVIEW</h2>
     </section>
   ); 
 }
-export function CTA({ dark }) { 
+export function CTA() {
   return (
     <section className="min-h-screen relative p-8 md:p-16 bg-yellow text-ink flex flex-col items-center justify-center text-center">
       <h2 className="text-headline mb-12 font-bold">STOP GUESSING.<br/>START SOURCING.</h2>
@@ -28,7 +27,7 @@ export function CTA({ dark }) {
     </section>
   ); 
 }
-export function Footer({ dark }) { 
+export function Footer() {
   return (
     <footer className="p-8 md:p-16 bg-ink text-paper border-t-4 border-paper flex justify-between items-end">
       <div className="font-sans text-headline font-bold">TS.</div>
