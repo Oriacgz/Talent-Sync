@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useInView } from 'react-intersection-observer';
 import gsap from 'gsap';
 
@@ -14,9 +14,7 @@ export default function BigNumber({ value, end, label, suffix = '', duration = 2
       const targetValue = parseInt(valString.replace(/,/g, ''), 10);
       const isStringValue = isNaN(targetValue);
 
-      if (isStringValue) {
-        setDisplayValue(valToUse);
-      } else {
+      if (!isStringValue) {
         const obj = { val: 0 };
         gsap.to(obj, {
           val: targetValue,
@@ -31,8 +29,8 @@ export default function BigNumber({ value, end, label, suffix = '', duration = 2
   const targetValue = parseInt(String(valToUse || 0).replace(/,/g, ''), 10);
   const isStringValue = isNaN(targetValue);
 
-  const formattedValue = isStringValue 
-    ? displayValue 
+  const formattedValue = isStringValue
+    ? String(valToUse ?? '')
     : displayValue.toLocaleString();
 
   if (!label) {
