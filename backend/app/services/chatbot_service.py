@@ -5,6 +5,7 @@
 
 import json
 import re
+from typing import Any
 
 import google.generativeai as genai
 
@@ -44,19 +45,42 @@ Ask one or two questions at a time - never all at once.
 NEVER make up information. NEVER output code."""
 
 
+def _build_context_instruction(context: dict[str, Any] | None) -> str:
+    """Build safe personalization guidance injected into model system instruction."""
+    if not context:
+        return ""
+
+    try:
+        context_json = json.dumps(context, ensure_ascii=True, default=str)
+    except TypeError:
+        context_json = "{}"
+
+    trimmed_context = context_json[:3500]
+    return (
+        "Personalization context for this student conversation:\n"
+        f"{trimmed_context}\n"
+        "Use this context only when directly relevant, do not invent facts, and keep responses concise and actionable."
+    )
+
+
 # Configure Gemini once at import time.
 genai.configure(api_key=settings.GEMINI_API_KEY)
 
 
-def get_model() -> genai.GenerativeModel:
+def get_model(context: dict[str, Any] | None = None) -> genai.GenerativeModel:
     """Build and return the configured Gemini model client."""
+    system_instruction = SYSTEM_PROMPT
+    context_instruction = _build_context_instruction(context)
+    if context_instruction:
+        system_instruction = f"{SYSTEM_PROMPT}\n\n{context_instruction}"
+
     return genai.GenerativeModel(
         model_name=settings.GEMINI_MODEL,
-        system_instruction=SYSTEM_PROMPT,
+        system_instruction=system_instruction,
     )
 
 
-def send_to_gemma(message: str, history: list) -> str:
+def send_to_gemma(message: str, history: list, context: dict[str, Any] | None = None) -> str:
     """
     Send a user message to Gemini/Gemma.
 
@@ -64,7 +88,7 @@ def send_to_gemma(message: str, history: list) -> str:
     It is converted to Gemini chat history format where assistant role is model.
     """
     try:
-        model = get_model()
+        model = get_model(context)
 
         gemini_history = []
         for item in history:

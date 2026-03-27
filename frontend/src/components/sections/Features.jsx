@@ -227,7 +227,7 @@ const FeatureCard = ({
   );
 };
 
-export default function Features({ dark }) {
+export default function Features() {
   const sectionRef = useRef(null);
   const cardsContainerRef = useRef(null);
   const [expandedCard, setExpandedCard] = useState(null);

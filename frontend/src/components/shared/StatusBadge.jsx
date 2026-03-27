@@ -6,6 +6,20 @@
  * DEPENDS ON: nothing
  * PROPS: status (string)
  */
+import Badge from '../ui/Badge'
+
+const STATUS_COLOR = {
+  APPLIED: 'ink',
+  REVIEWED: 'yellow',
+  SHORTLISTED: 'cyan',
+  SELECTED: 'green',
+  HIRED: 'green',
+  REJECTED: 'pink',
+  DECLINED: 'pink',
+}
+
 export default function StatusBadge({ status }) {
-  return <span>{status}</span>;
+  const normalized = String(status || 'UNKNOWN').toUpperCase()
+  const color = STATUS_COLOR[normalized] || 'ink'
+  return <Badge label={normalized} color={color} />
 }

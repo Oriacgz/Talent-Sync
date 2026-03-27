@@ -3,7 +3,6 @@ const CHARS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789@#$%&*";
 
 export function useMatrixText(finalText, speed = 40) {
   const [display, setDisplay] = useState(finalText);
-  const frame = useRef(0);
   const raf = useRef(null);
 
   const scramble = useCallback(() => {

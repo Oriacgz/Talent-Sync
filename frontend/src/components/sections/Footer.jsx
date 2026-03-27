@@ -1,7 +1,7 @@
 import React from 'react';
 import { useLenis } from '../../hooks/useLenis';
 
-export default function Footer({ dark }) {
+export default function Footer() {
   const lenis = useLenis();
 
   const handleScrollTop = () => {

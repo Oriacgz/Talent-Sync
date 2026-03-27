@@ -5,10 +5,8 @@ import SectionLabel from '../ui/SectionLabel';
 
 gsap.registerPlugin(ScrollTrigger);
 
-export default function Solution({ dark }) {
-  const sectionRef = useRef(null);
+export default function Solution() {
   const triggerRef = useRef(null);
-  const boxRef = useRef(null);
   const matchNumberRef = useRef(null);
   const [typedText, setTypedText] = useState("");
 

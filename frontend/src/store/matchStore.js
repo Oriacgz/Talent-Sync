@@ -4,14 +4,14 @@
  * DEPENDS ON: zustand
  */
 import { create } from "zustand";
-export const useMatchStore = create(() => ({
+export const useMatchStore = create((set) => ({
   matches: [],
   activeMatch: null,
   isLoading: false,
   error: null,
-  setMatches: () => {},
-  setActiveMatch: () => {},
-  setLoading: () => {},
-  setError: () => {},
-  clearMatches: () => {},
+  setMatches: (matches) => set({ matches: Array.isArray(matches) ? matches : [] }),
+  setActiveMatch: (activeMatch) => set({ activeMatch: activeMatch || null }),
+  setLoading: (isLoading) => set({ isLoading: Boolean(isLoading) }),
+  setError: (error) => set({ error: error || null }),
+  clearMatches: () => set({ matches: [], activeMatch: null, error: null, isLoading: false }),
 }));

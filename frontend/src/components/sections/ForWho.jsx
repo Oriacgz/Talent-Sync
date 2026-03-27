@@ -6,7 +6,7 @@ import BrutalButton from '../ui/BrutalButton';
 
 gsap.registerPlugin(ScrollTrigger);
 
-export default function ForWho({ dark }) {
+export default function ForWho() {
   const sectionRef = useRef(null);
   const leftColRef = useRef(null);
   const rightColRef = useRef(null);

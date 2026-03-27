@@ -1,28 +1,34 @@
-import React, { useMemo, useRef } from 'react';
+import React, { useRef } from 'react';
 import { Canvas, useFrame } from '@react-three/fiber';
 
-function Particles() {
-  const count = 600;
-  
-  const { whiteArr, yellowArr } = useMemo(() => {
-    const whitePositions = [];
-    const yellowPositions = [];
-    
-    for (let i = 0; i < count; i++) {
-      const x = (Math.random() - 0.5) * 20;
-      const y = (Math.random() - 0.5) * 20;
-      const z = (Math.random() - 0.5) * 10 - 5;
-      if (Math.random() > 0.8) {
-        yellowPositions.push(x, y, z);
-      } else {
-        whitePositions.push(x, y, z);
-      }
+const PARTICLE_COUNT = 600;
+
+function createParticleBuffers() {
+  const whitePositions = [];
+  const yellowPositions = [];
+
+  for (let i = 0; i < PARTICLE_COUNT; i++) {
+    const x = (Math.random() - 0.5) * 20;
+    const y = (Math.random() - 0.5) * 20;
+    const z = (Math.random() - 0.5) * 10 - 5;
+
+    if (Math.random() > 0.8) {
+      yellowPositions.push(x, y, z);
+    } else {
+      whitePositions.push(x, y, z);
     }
-    return {
-      whiteArr: new Float32Array(whitePositions),
-      yellowArr: new Float32Array(yellowPositions)
-    };
-  }, []);
+  }
+
+  return {
+    whiteArr: new Float32Array(whitePositions),
+    yellowArr: new Float32Array(yellowPositions),
+  };
+}
+
+const PARTICLE_BUFFERS = createParticleBuffers();
+
+function Particles() {
+  const { whiteArr, yellowArr } = PARTICLE_BUFFERS;
 
   const groupRef = useRef();
 

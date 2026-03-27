@@ -1,4 +1,4 @@
-import React, { useMemo, useRef, useEffect } from 'react';
+import React, { useEffect } from 'react';
 import gsap from 'gsap';
 import ScrollTrigger from 'gsap/ScrollTrigger';
 
@@ -14,7 +14,7 @@ import { useNavigate } from 'react-router-dom';
 gsap.registerPlugin(ScrollTrigger);
 
 
-export default function Hero({ dark }) {
+export default function Hero() {
   const navigate = useNavigate();
   useEffect(() => {
     const handleLoaderDone = () => {

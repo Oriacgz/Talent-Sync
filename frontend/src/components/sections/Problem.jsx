@@ -7,7 +7,7 @@ import PaperTear from '../ui/PaperTear';
 
 gsap.registerPlugin(ScrollTrigger);
 
-export default function Problem({ dark }) {
+export default function Problem() {
   const sectionRef = useRef(null);
   const textRef = useRef(null);
   const blocksRef = useRef([]);

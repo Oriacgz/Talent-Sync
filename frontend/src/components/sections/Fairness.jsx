@@ -99,12 +99,11 @@ const Gauge = ({ label, value, sub, colorClass, percent }) => {
 };
 
 
-export default function Fairness({ dark }) {
+export default function Fairness() {
   const sectionRef = useRef(null);
   const arrowRef = useRef(null);
   const stampRef = useRef(null);
   const teamRefs = useRef([]);
-  teamRefs.current = [];
 
   const addToRefs = el => {
     if (el && !teamRefs.current.includes(el)) {

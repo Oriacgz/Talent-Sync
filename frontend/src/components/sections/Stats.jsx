@@ -3,7 +3,7 @@ import SectionLabel from '../ui/SectionLabel';
 import BigNumber from '../ui/BigNumber';
 import PaperTear from '../ui/PaperTear';
 
-export default function Stats({ dark }) {
+export default function Stats() {
 
   return (
     <section id="stats" className="relative bg-paper text-ink overflow-hidden w-full" style={{ padding: 'clamp(60px, 8vw, 140px) 0' }}>

@@ -39,37 +39,32 @@ export default function AppShell({ children }) {
 
     window.addEventListener('mousemove', onMouseMove);
 
-    const setupInteractiveCursor = () => {
-      const interactiveElements = document.querySelectorAll('a, button, [data-hover], input, select, textarea');
-      const onEnter = () => ring.classList.add('expanded');
-      const onLeave = () => ring.classList.remove('expanded');
-
-      interactiveElements.forEach((el) => {
-        el.addEventListener('mouseenter', onEnter);
-        el.addEventListener('mouseleave', onLeave);
-      });
-
-      return () => {
-        interactiveElements.forEach((el) => {
-          el.removeEventListener('mouseenter', onEnter);
-          el.removeEventListener('mouseleave', onLeave);
-        });
-      };
+    const isInteractive = (target) => {
+      if (!target || !(target instanceof Element)) {
+        return false;
+      }
+      return Boolean(target.closest('a, button, [data-hover], input, select, textarea'));
     };
 
-    let cleanup = setupInteractiveCursor();
+    const onPointerOver = (event) => {
+      if (isInteractive(event.target)) {
+        ring.classList.add('expanded');
+      }
+    };
 
-    const observer = new MutationObserver(() => {
-      cleanup();
-      cleanup = setupInteractiveCursor();
-    });
+    const onPointerOut = (event) => {
+      if (isInteractive(event.target)) {
+        ring.classList.remove('expanded');
+      }
+    };
 
-    observer.observe(document.body, { childList: true, subtree: true });
+    document.addEventListener('pointerover', onPointerOver, true);
+    document.addEventListener('pointerout', onPointerOut, true);
 
     return () => {
       window.removeEventListener('mousemove', onMouseMove);
-      cleanup();
-      observer.disconnect();
+      document.removeEventListener('pointerover', onPointerOver, true);
+      document.removeEventListener('pointerout', onPointerOut, true);
     };
   }, []);
 

@@ -4,7 +4,7 @@ import BrutalButton from './ui/BrutalButton';
 import { getLenis } from '../hooks/useLenis';
 import { useNavigate } from 'react-router-dom';
 
-export default function Navbar({ dark, setDark }) {
+export default function Navbar() {
   const navRef = useRef(null);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [activeHash, setActiveHash] = useState('home');
@@ -69,34 +69,24 @@ export default function Navbar({ dark, setDark }) {
   useEffect(() => {
     // Active section tracking with IntersectionObserver
     const sectionIds = ["home","problem","how-it-works","features","impact"];
-    let observers = [];
-
-    const tryObserve = () => {
-      let missing = false;
-      sectionIds.forEach(id => {
-        if (!document.getElementById(id)) missing = true;
-      });
-
-      if (!missing && observers.length === 0) {
-        observers = sectionIds.map(id => {
-          const el = document.getElementById(id);
-          const obs = new IntersectionObserver(
-            ([entry]) => {
-              // threshold 0 with tight rootMargin acts as a horizontal tripwire
-              if (entry.isIntersecting) setActiveHash(id);
-            },
-            { threshold: 0, rootMargin: "-20% 0px -50% 0px" }
-          );
-          obs.observe(el);
-          return obs;
-        });
-      } else if (missing) {
-        // Re-poll if sections lazy-load via Suspense
-        setTimeout(tryObserve, 500);
-      }
-    };
-
-    tryObserve();
+    const observers = sectionIds
+      .map((id) => {
+        const el = document.getElementById(id);
+        if (!el) {
+          return null;
+        }
+        const obs = new IntersectionObserver(
+          ([entry]) => {
+            if (entry.isIntersecting) {
+              setActiveHash(id);
+            }
+          },
+          { threshold: 0, rootMargin: "-20% 0px -50% 0px" }
+        );
+        obs.observe(el);
+        return obs;
+      })
+      .filter(Boolean);
     
     return () => {
       observers.forEach(o => o.disconnect());

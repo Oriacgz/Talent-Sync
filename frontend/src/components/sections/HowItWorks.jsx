@@ -7,13 +7,12 @@ import PaperTear from '../ui/PaperTear';
 
 gsap.registerPlugin(ScrollTrigger);
 
-export default function HowItWorks({ dark }) {
+export default function HowItWorks() {
   const sectionRef = useRef(null);
   const bookCoverRef = useRef(null);
   const bookBackRef = useRef(null);
   const bookContentRef = useRef(null);
   const timelineTriggerRef = useRef(null);
-  const codePanelRef = useRef(null);
   const activeLineRef = useRef(null);
 
   const [activeStep, setActiveStep] = useState(0);

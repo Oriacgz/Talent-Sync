@@ -7,7 +7,7 @@ import { useNavigate } from 'react-router-dom';
 
 gsap.registerPlugin(ScrollTrigger);
 
-export default function CTA({ dark }) {
+export default function CTA() {
   const sectionRef = useRef(null);
   const navigate = useNavigate();
   
