@@ -88,11 +88,16 @@ export default function CandidateDetailPage() {
       return
     }
 
+    if (!candidate.applicationId) {
+      toast.error('Unable to update candidate status: missing application ID.')
+      return
+    }
+
     const previousStatus = status
     setStatusSaving(true)
     setStatus(nextStatus)
     try {
-      const applicationId = candidate.applicationId || candidate.id
+      const applicationId = candidate.applicationId
       await applicationService.updateStatus(applicationId, nextStatus)
       toast.success(`Candidate moved to ${nextStatus}.`)
     } catch {
