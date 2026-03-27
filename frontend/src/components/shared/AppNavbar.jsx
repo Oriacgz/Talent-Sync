@@ -6,14 +6,19 @@
  */
 import { useNavigate } from 'react-router-dom'
 import { authService } from '../../services/authService'
+import { useToast } from '../shared/useToast'
 import { useAuthStore } from '../../store/authStore'
+import { useMatchStore } from '../../store/matchStore'
 import { useUIStore } from '../../store/uiStore'
 import { normalizeRole } from '../../utils/roleUtils'
 
 export default function AppNavbar() {
   const navigate = useNavigate()
+  const toast = useToast()
   const user = useAuthStore((state) => state.user)
   const clearAuth = useAuthStore((state) => state.clearAuth)
+  const clearMatches = useMatchStore((state) => state.clearMatches)
+  const resetUIState = useUIStore((state) => state.resetUIState)
   const mobileSidebarOpen = useUIStore((state) => state.mobileSidebarOpen)
   const toggleMobileSidebar = useUIStore((state) => state.toggleMobileSidebar)
 
@@ -25,7 +30,10 @@ export default function AppNavbar() {
     } catch {
       // Ignore network errors on logout because tokens are client-side stateless.
     } finally {
+      clearMatches()
+      resetUIState()
       clearAuth()
+      toast.success('Logged out successfully.')
       navigate('/login', { replace: true })
     }
   }

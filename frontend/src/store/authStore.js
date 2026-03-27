@@ -6,8 +6,10 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 
-const DEV_MODE = true;
-const DEV_ROLE = "student"; // Switch between "student" and "recruiter" for dashboard testing.
+const DEV_MODE = import.meta.env.DEV && String(import.meta.env.VITE_DEV_AUTH_MODE || "false").toLowerCase() === "true";
+const DEV_ROLE = String(import.meta.env.VITE_DEV_AUTH_ROLE || "student").toLowerCase() === "recruiter"
+  ? "recruiter"
+  : "student";
 
 const DEV_USER = {
   name: "Demo User",
@@ -21,6 +23,7 @@ const getInitialAuthState = () => {
       token: null,
       refreshToken: null,
       isAuthenticated: true,
+      rehydrated: true,
     };
   }
 
@@ -29,6 +32,7 @@ const getInitialAuthState = () => {
     token: null,
     refreshToken: null,
     isAuthenticated: false,
+    rehydrated: false,
   };
 };
 
@@ -38,14 +42,17 @@ export const useAuthStore = create(persist((set) => ({
     user,
     token,
     refreshToken,
-    isAuthenticated: true
+    isAuthenticated: true,
+    rehydrated: true,
   }),
   clearAuth: () => set({
     user: null,
     token: null,
     refreshToken: null,
-    isAuthenticated: false
+    isAuthenticated: false,
+    rehydrated: true,
   }),
+  setRehydrated: (rehydrated) => set({ rehydrated: Boolean(rehydrated) }),
   updateUser: (userUpdates) => set((state) => ({
     user: { ...state.user, ...userUpdates }
   })),
@@ -58,6 +65,10 @@ export const useAuthStore = create(persist((set) => ({
     return {
       ...currentState,
       ...(persistedState || {}),
+      rehydrated: false,
     };
+  },
+  onRehydrateStorage: () => (state) => {
+    state?.setRehydrated(true);
   },
 }));

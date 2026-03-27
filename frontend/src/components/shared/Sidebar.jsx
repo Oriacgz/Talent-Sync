@@ -78,6 +78,20 @@ export default function Sidebar() {
     }
   }, [closeMobileSidebar, mobileSidebarOpen])
 
+  useEffect(() => {
+    const onResize = () => {
+      if (window.innerWidth >= 768) {
+        closeMobileSidebar()
+      }
+    }
+
+    window.addEventListener('resize', onResize)
+
+    return () => {
+      window.removeEventListener('resize', onResize)
+    }
+  }, [closeMobileSidebar])
+
   return (
     <>
       <aside
@@ -85,11 +99,11 @@ export default function Sidebar() {
           sidebarOpen ? 'w-64' : 'w-20'
         } hidden shrink-0 transition-all duration-200 md:block`}
       >
-        <div className="flex h-16 items-center justify-between border-b-[3px] border-[var(--border)] px-4">
+        <div className="flex h-16 items-center justify-between border-b-[3px] border-(--border) px-4">
           {sidebarOpen ? (
             <span className="font-mono text-xs uppercase tracking-widest text-ink">TalentSync</span>
           ) : (
-            <span className="mx-auto flex h-8 w-8 items-center justify-center rounded-[3px] border-2 border-[var(--border)] bg-[var(--yellow)] font-mono text-xs font-bold text-ink shadow-[3px_3px_0_var(--border)]">
+            <span className="mx-auto flex h-8 w-8 items-center justify-center rounded-[3px] border-2 border-(--border) bg-(--yellow) font-mono text-xs font-bold text-ink shadow-[3px_3px_0_var(--border)]">
               TS
             </span>
           )}
@@ -138,13 +152,13 @@ export default function Sidebar() {
 
       <aside
         id="mobile-sidebar"
-        className={`neo-sidebar fixed left-0 top-0 z-50 h-screen w-72 max-w-[84vw] border-r-[3px] border-[var(--border)] shadow-[6px_0_0_var(--border)] transition-transform duration-200 md:hidden ${mobileSidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}
+        className={`neo-sidebar fixed left-0 top-0 z-50 h-screen w-72 max-w-[84vw] border-r-[3px] border-(--border) shadow-[6px_0_0_var(--border)] transition-transform duration-200 md:hidden ${mobileSidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}
         role="dialog"
         aria-modal="true"
         aria-label="Mobile sidebar"
         aria-hidden={!mobileSidebarOpen}
       >
-        <div className="flex h-16 items-center justify-between border-b-[3px] border-[var(--border)] px-4">
+        <div className="flex h-16 items-center justify-between border-b-[3px] border-(--border) px-4">
           <span className="font-mono text-xs uppercase tracking-widest text-ink">TalentSync</span>
           <button
             ref={closeButtonRef}

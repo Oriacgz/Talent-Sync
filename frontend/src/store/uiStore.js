@@ -11,5 +11,6 @@ export const useUIStore = create((set) => ({
   toggleSidebar: () => set((state) => ({ sidebarOpen: !state.sidebarOpen })),
   toggleMobileSidebar: () => set((state) => ({ mobileSidebarOpen: !state.mobileSidebarOpen })),
   closeMobileSidebar: () => set({ mobileSidebarOpen: false }),
+  resetUIState: () => set({ sidebarOpen: true, mobileSidebarOpen: false, globalLoading: false }),
   setGlobalLoading: (globalLoading) => set({ globalLoading: Boolean(globalLoading) }),
 }));
