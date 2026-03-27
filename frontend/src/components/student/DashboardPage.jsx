@@ -8,6 +8,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import EmptyState from '../shared/EmptyState'
+import FloatingCareerAssistant from './FloatingCareerAssistant'
 import MatchRing from '../shared/MatchRing'
 import { SkeletonCard } from '../shared/Skeletons'
 import SkillTag from '../shared/SkillTag'
@@ -75,6 +76,7 @@ export default function StudentDashboard() {
   const skillGapInsight = useMemo(() => getSkillGapInsight(topMatches, jobs), [jobs, topMatches])
 
   return (
+    <>
     <section className="stack-base">
       <header className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
@@ -196,5 +198,7 @@ export default function StudentDashboard() {
         </div>
       ) : null}
     </section>
+    <FloatingCareerAssistant />
+    </>
   )
 }

@@ -90,8 +90,8 @@
   .space-32 { padding: var(--space-32); }
 
   .text-primary-hero { @apply text-[clamp(1.5rem,2.2vw,2rem)] font-bold leading-tight; color: var(--text); }
-  .text-secondary { @apply text-sm; color: #4a4a4a; }
-  .text-tertiary { @apply text-xs; color: #5b5b5b; }
+  .text-secondary { @apply text-sm; color: #2f2f2f; }
+  .text-tertiary { @apply text-xs; color: #3d3d3d; }
 
   .neo-shell {
     background: var(--bg);
@@ -133,7 +133,7 @@
   }
 
   .btn-primary {
-    @apply inline-flex items-center justify-center whitespace-nowrap px-3 py-2 text-xs font-semibold uppercase tracking-wider disabled:cursor-not-allowed disabled:opacity-60;
+    @apply inline-flex min-h-11 items-center justify-center whitespace-nowrap px-3 py-2 text-xs font-semibold uppercase tracking-wider disabled:cursor-not-allowed disabled:opacity-60;
     border: 2px solid var(--border);
     border-radius: 3px;
     background: var(--yellow);
@@ -148,7 +148,7 @@
   }
 
   .btn-secondary {
-    @apply inline-flex items-center justify-center whitespace-nowrap px-3 py-2 text-xs uppercase tracking-wider disabled:opacity-60;
+    @apply inline-flex min-h-11 items-center justify-center whitespace-nowrap px-3 py-2 text-xs uppercase tracking-wider disabled:opacity-60;
     border: 2px solid var(--border);
     border-radius: 3px;
     background: var(--bg);
@@ -344,6 +344,18 @@
     .btn-secondary {
       box-shadow: 2px 2px 0 var(--border);
     }
+
+    .card-base,
+    .list-item,
+    .surface-muted,
+    .surface-info,
+    .brutal-panel {
+      padding: var(--space-8);
+    }
+
+    .neo-navlink {
+      padding: var(--space-8);
+    }
   }
 
   @media (max-width: 900px) {
@@ -515,5 +527,53 @@
     z-index: 99997;
     transform-origin: left;
     transform: scaleX(0);
+  }
+
+  .assistant-panel {
+    transform-origin: bottom right;
+  }
+
+  .assistant-scrollbar::-webkit-scrollbar {
+    width: 7px;
+    height: 7px;
+  }
+
+  .assistant-scrollbar::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  .assistant-scrollbar::-webkit-scrollbar-thumb {
+    background: rgba(10, 10, 10, 0.22);
+    border-radius: 999px;
+    border: 2px solid transparent;
+    background-clip: padding-box;
+  }
+
+  .assistant-scrollbar:hover::-webkit-scrollbar-thumb {
+    background: rgba(10, 10, 10, 0.34);
+    border: 2px solid transparent;
+    background-clip: padding-box;
+  }
+
+  .assistant-resize-handle {
+    position: absolute;
+    left: 8px;
+    bottom: 8px;
+    width: 22px;
+    height: 22px;
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    background: #fff;
+    color: rgba(10, 10, 10, 0.62);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    cursor: nesw-resize;
+    transition: background-color 120ms ease, color 120ms ease;
+  }
+
+  .assistant-resize-handle:hover {
+    background: #f3f1ea;
+    color: rgba(10, 10, 10, 0.86);
   }
 }
