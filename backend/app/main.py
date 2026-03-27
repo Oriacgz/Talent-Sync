@@ -35,6 +35,10 @@ async def startup():
 async def shutdown():
     await prisma.disconnect()
 
+@app.get("/")
+def root():
+    return {"message": "TalentSync API is running", "docs": "/docs", "health": "/health"}
+
 @app.get("/health")
 def health():
     return {"status": "ok", "service": "TalentSync API"}
