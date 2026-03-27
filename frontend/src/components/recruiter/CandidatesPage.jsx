@@ -1,5 +1,5 @@
 import { memo, useCallback, useEffect, useMemo, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import { matchService } from '../../services/matchService'
 import { buildMatchNarrative, topShapReasons } from '../../utils/formatters'
 import EmptyState from '../shared/EmptyState'
@@ -43,6 +43,8 @@ const CandidateListItem = memo(function CandidateListItem({ candidate, index, on
 
 export default function CandidatesPage() {
   const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
+  const jobId = String(searchParams.get('jobId') || '').trim()
   const [candidates, setCandidates] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
@@ -54,7 +56,7 @@ export default function CandidatesPage() {
     const load = async () => {
       setLoading(true)
       setError('')
-      const data = await matchService.getJobCandidates('')
+      const data = await matchService.getJobCandidates(jobId)
       if (!active) {
         return
       }
@@ -74,7 +76,7 @@ export default function CandidatesPage() {
     return () => {
       active = false
     }
-  }, [reloadTick])
+  }, [jobId, reloadTick])
 
   const sortedCandidates = useMemo(
     () => [...candidates].sort((a, b) => (Number(b?.score) || 0) - (Number(a?.score) || 0)),
@@ -89,8 +91,25 @@ export default function CandidatesPage() {
     <section className="stack-base">
       <header>
         <h1 className="text-primary-hero">Candidates</h1>
-        <p className="text-secondary">Ranked candidates sorted by AI match quality.</p>
+        <p className="text-secondary">
+          {jobId
+            ? 'Showing ranked candidates for the selected job posting.'
+            : 'Ranked candidates sorted by AI match quality.'}
+        </p>
       </header>
+
+      {jobId ? (
+        <article className="surface-info flex flex-wrap items-center justify-between gap-3 text-xs text-ink/85">
+          <p className="min-w-0 wrap-break-word">Filtered by job ID: {jobId}</p>
+          <button
+            type="button"
+            onClick={() => navigate('/recruiter/candidates')}
+            className="btn-secondary btn-feedback"
+          >
+            Clear Filter
+          </button>
+        </article>
+      ) : null}
 
       <article className="card-base flex flex-col items-start gap-4 sm:flex-row sm:items-center sm:justify-between">
         <p className="text-xs text-ink/80">Candidate ranking uses profile-job alignment and explainability factors.</p>
@@ -123,9 +142,11 @@ export default function CandidatesPage() {
       {!loading && !error && candidates.length === 0 ? (
         <EmptyState
           title="No candidates found"
-          subtitle="Publish a job posting to start receiving candidate rankings."
-          actionLabel="Post a Job"
-          onAction={() => navigate('/recruiter/post-job')}
+          subtitle={jobId
+            ? 'No candidates are available for the selected job yet.'
+            : 'Publish a job posting to start receiving candidate rankings.'}
+          actionLabel={jobId ? 'Clear Filter' : 'Post a Job'}
+          onAction={() => navigate(jobId ? '/recruiter/candidates' : '/recruiter/post-job')}
           actionClassName="btn-secondary"
           icon="*"
         />

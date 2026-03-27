@@ -104,13 +104,13 @@ export default function AnalyticsPage() {
       </div>
 
       <div className="grid gap-4 lg:grid-cols-2">
-        <article className="h-56 sm:h-64 md:h-72 card-base">
+        <article className="card-base h-64 sm:h-72 md:h-80">
           <p className="text-sm text-ink/70">Applications by Day</p>
           <p className="mb-2 text-xs text-ink/60">Shows daily inbound application volume to track recruiter load.</p>
           <ResponsiveContainer width="100%" height="100%">
             <LineChart data={applicationsByDay}>
               <CartesianGrid stroke="rgba(10,10,10,0.12)" vertical={false} />
-              <XAxis dataKey="day" stroke="#0A0A0A" axisLine={{ strokeWidth: 2 }} tickLine={{ strokeWidth: 2 }} />
+              <XAxis dataKey="day" stroke="#0A0A0A" axisLine={{ strokeWidth: 2 }} tickLine={{ strokeWidth: 2 }} tick={{ fontSize: 12 }} />
               <YAxis stroke="#0A0A0A" axisLine={{ strokeWidth: 2 }} tickLine={{ strokeWidth: 2 }} />
               <Tooltip />
               <Line type="linear" dataKey="value" stroke="#00D9FF" strokeWidth={3} dot={{ r: 3, fill: '#0A0A0A' }} />
@@ -118,13 +118,23 @@ export default function AnalyticsPage() {
           </ResponsiveContainer>
         </article>
 
-        <article className="h-56 sm:h-64 md:h-72 card-base">
+        <article className="card-base h-64 sm:h-72 md:h-80">
           <p className="text-sm text-ink/70">Top Skills Demand</p>
           <p className="mb-2 text-xs text-ink/60">Highlights the most frequent skills in your applicant pool.</p>
           <ResponsiveContainer width="100%" height="100%">
             <BarChart data={topSkills}>
               <CartesianGrid stroke="rgba(10,10,10,0.12)" vertical={false} />
-              <XAxis dataKey="skill" stroke="#0A0A0A" axisLine={{ strokeWidth: 2 }} tickLine={{ strokeWidth: 2 }} />
+              <XAxis
+                dataKey="skill"
+                stroke="#0A0A0A"
+                axisLine={{ strokeWidth: 2 }}
+                tickLine={{ strokeWidth: 2 }}
+                tick={{ fontSize: 11 }}
+                angle={-22}
+                textAnchor="end"
+                height={56}
+                interval={0}
+              />
               <YAxis stroke="#0A0A0A" axisLine={{ strokeWidth: 2 }} tickLine={{ strokeWidth: 2 }} />
               <Tooltip />
               <Bar dataKey="count" fill="#00D9FF" radius={[0, 0, 0, 0]} />

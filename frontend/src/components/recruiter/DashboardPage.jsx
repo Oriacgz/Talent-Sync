@@ -22,7 +22,7 @@ const JobListItem = memo(function JobListItem({ job, onViewCandidates }) {
       </div>
       <button
         type="button"
-        onClick={onViewCandidates}
+        onClick={() => onViewCandidates(job.id)}
         className="btn-secondary btn-feedback w-full sm:w-auto"
       >
         View Candidates ({job.candidateCount || 0})
@@ -38,7 +38,10 @@ export default function RecruiterDashboard() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [reloadTick, setReloadTick] = useState(0)
-  const onViewCandidates = useCallback(() => navigate('/recruiter/candidates'), [navigate])
+  const onViewCandidates = useCallback((jobId) => {
+    const id = String(jobId || '').trim()
+    navigate(id ? `/recruiter/candidates?jobId=${encodeURIComponent(id)}` : '/recruiter/candidates')
+  }, [navigate])
 
   useEffect(() => {
     let active = true
@@ -126,7 +129,7 @@ export default function RecruiterDashboard() {
           <p className="text-xs uppercase tracking-wider text-ink/70">Hiring Funnel</p>
           <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
             {funnel.map((stage) => (
-              <div key={stage.key} className="brutal-stat border-l-[var(--cyan)] bg-[var(--bg)]">
+              <div key={stage.key} className="brutal-stat border-l-(--cyan) bg-(--bg)">
                 <p className="text-[10px] uppercase tracking-[0.15em] text-ink/60">{stage.label}</p>
                 <p className="text-xl font-semibold text-ink">{stage.count}</p>
               </div>

@@ -5,8 +5,8 @@
  *                 Status update buttons: Reviewed / Shortlist / Select / Reject.
  * DEPENDS ON: matchService, applicationService, SHAPChart, MatchRing, StatusBadge
  */
-import { useEffect, useState } from 'react'
-import { useNavigate, useParams } from 'react-router-dom'
+import { useEffect, useMemo, useState } from 'react'
+import { useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { applicationService } from '../../services/applicationService'
 import { matchService } from '../../services/matchService'
 import { buildMatchNarrative, topShapReasons } from '../../utils/formatters'
@@ -28,6 +28,8 @@ const STATUS_ACTIONS = [
 export default function CandidateDetailPage() {
   const { id } = useParams()
   const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
+  const jobId = String(searchParams.get('jobId') || '').trim()
   const toast = useToast()
   const [candidate, setCandidate] = useState(null)
   const [loading, setLoading] = useState(true)
@@ -35,6 +37,7 @@ export default function CandidateDetailPage() {
   const [reloadTick, setReloadTick] = useState(0)
   const [status, setStatus] = useState('APPLIED')
   const [statusSaving, setStatusSaving] = useState(false)
+  const topReasons = useMemo(() => topShapReasons(candidate?.shapValues, 2), [candidate?.shapValues])
 
   useEffect(() => {
     let active = true
@@ -47,7 +50,7 @@ export default function CandidateDetailPage() {
         setLoading(false)
         return
       }
-      const data = await matchService.getJobCandidates('')
+      const data = await matchService.getJobCandidates(jobId)
       if (!active) {
         return
       }
@@ -69,13 +72,13 @@ export default function CandidateDetailPage() {
     return () => {
       active = false
     }
-  }, [id, reloadTick])
+  }, [id, jobId, reloadTick])
 
   if (loading) {
     return (
       <section className="grid gap-4 xl:grid-cols-[minmax(0,2fr)_minmax(280px,1fr)]">
-        <SkeletonCard className="min-h-[300px]" />
-        <SkeletonCard className="min-h-[300px]" />
+        <SkeletonCard className="min-h-75" />
+        <SkeletonCard className="min-h-75" />
       </section>
     )
   }
@@ -120,8 +123,8 @@ export default function CandidateDetailPage() {
     <section className="grid gap-4 xl:grid-cols-[minmax(0,2fr)_minmax(280px,1fr)]">
       <article className="stack-base card-base">
         <header>
-          <h1 className="text-2xl font-bold">{candidate.fullName}</h1>
-          <p className="text-secondary">{candidate.college} · GPA {candidate.gpa}</p>
+          <h1 className="wrap-break-word text-2xl font-bold">{candidate.fullName}</h1>
+          <p className="wrap-break-word text-secondary">{candidate.college} · GPA {candidate.gpa}</p>
         </header>
 
         <div className="flex flex-wrap gap-2">
@@ -135,8 +138,8 @@ export default function CandidateDetailPage() {
         <div className="surface-info text-xs text-ink/75">
           <p className="mb-2 text-ink/90">Top reasons this candidate matches</p>
           <div className="stack-dense">
-            {topShapReasons(candidate?.shapValues, 2).length ? (
-              topShapReasons(candidate?.shapValues, 2).map((reason) => (
+            {topReasons.length ? (
+              topReasons.map((reason) => (
                 <p key={reason.feature}>{reason.feature}: {reason.value >= 0 ? '+' : ''}{reason.value.toFixed(2)}</p>
               ))
             ) : (

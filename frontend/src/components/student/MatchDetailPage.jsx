@@ -5,7 +5,7 @@
  *                 Apply button calls applicationService.apply().
  * DEPENDS ON: matchService, applicationService, SHAPChart, MatchRing, SkillTag
  */
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { applicationService } from '../../services/applicationService'
 import { matchService } from '../../services/matchService'
@@ -36,6 +36,7 @@ export default function MatchDetailPage() {
 
   const strongest = strongestShapFactor(match?.shapValues)
   const weakest = weakestShapFactor(match?.shapValues)
+  const topReasons = useMemo(() => topShapReasons(match?.shapValues, 2), [match?.shapValues])
 
   useEffect(() => {
     let active = true
@@ -88,8 +89,8 @@ export default function MatchDetailPage() {
   if (loading) {
     return (
       <section className="grid gap-4 xl:grid-cols-[minmax(0,2fr)_minmax(280px,1fr)]">
-        <SkeletonCard className="min-h-[300px]" />
-        <SkeletonCard className="min-h-[300px]" />
+        <SkeletonCard className="min-h-75" />
+        <SkeletonCard className="min-h-75" />
       </section>
     )
   }
@@ -120,8 +121,8 @@ export default function MatchDetailPage() {
         </div>
 
         <header>
-          <h1 className="text-2xl font-bold">{match.title || 'Role'}</h1>
-          <p className="text-secondary">{match.company || 'Company'} · {match.location || 'Remote'}</p>
+          <h1 className="wrap-break-word text-2xl font-bold">{match.title || 'Role'}</h1>
+          <p className="wrap-break-word text-secondary">{match.company || 'Company'} · {match.location || 'Remote'}</p>
         </header>
 
         <p className="text-sm text-ink/85">{buildMatchNarrative(match)}</p>
@@ -143,8 +144,8 @@ export default function MatchDetailPage() {
         <div className="surface-muted text-xs text-ink/75">
           <p className="mb-2 text-ink/90">Top explainability signals</p>
           <div className="stack-dense">
-            {topShapReasons(match?.shapValues, 2).length ? (
-              topShapReasons(match?.shapValues, 2).map((reason) => (
+            {topReasons.length ? (
+              topReasons.map((reason) => (
                 <p key={reason.feature}>{reason.feature}: {reason.value >= 0 ? '+' : ''}{reason.value.toFixed(2)}</p>
               ))
             ) : (
