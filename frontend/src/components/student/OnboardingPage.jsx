@@ -34,6 +34,7 @@ export default function OnboardingPage() {
   const [sessionId, setSessionId] = useState(null)
   const messagesEndRef = useRef(null)
   const isMountedRef = useRef(true)
+  const hasInitializedRef = useRef(false)
 
   useEffect(() => {
     isMountedRef.current = true
@@ -67,6 +68,9 @@ export default function OnboardingPage() {
   }
 
   useEffect(() => {
+    if (hasInitializedRef.current) return
+    hasInitializedRef.current = true
+
     const initializeOnboarding = async () => {
       try {
         if (isMountedRef.current) {

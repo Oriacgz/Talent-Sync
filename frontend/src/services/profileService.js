@@ -4,18 +4,12 @@
  * DEPENDS ON: api.js
  */
 import apiClient from "./api";
-import { resolveData } from "./mockRuntime";
 
 export const profileService = {
-  getMyProfile: async () => resolveData({
-    apiCall: async () => {
-      const response = await apiClient.get("/students/me/profile");
-      return response?.data || null;
-    },
-    mockFile: "students.js",
-    mockExport: "studentProfile",
-    fallbackValue: null,
-  }),
+  getMyProfile: async () => {
+    const response = await apiClient.get("/students/me/profile");
+    return response?.data || null;
+  },
 
   updateProfile: async (data) => {
     const response = await apiClient.put("/students/me/profile", data);

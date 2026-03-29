@@ -123,7 +123,7 @@ export default function ProfilePersonalDetails({
               value={personal.college}
               onChange={(e) => update('college', e.target.value)}
               placeholder="College name"
-              className="input-brutal"
+              className="input-brutal text-ink/70 placeholder:text-ink/55"
             />
           </div>
 
@@ -135,7 +135,7 @@ export default function ProfilePersonalDetails({
               value={personal.branch}
               onChange={(e) => update('branch', e.target.value)}
               placeholder="e.g. B.Tech CSE"
-              className="input-brutal"
+              className="input-brutal text-ink/70 placeholder:text-ink/55"
             />
           </div>
 
@@ -147,7 +147,7 @@ export default function ProfilePersonalDetails({
               value={personal.cgpa}
               onChange={(e) => update('cgpa', e.target.value)}
               placeholder="e.g. 8.5"
-              className="input-brutal"
+              className="input-brutal text-ink/70 placeholder:text-ink/55"
               type="text"
               inputMode="decimal"
             />
@@ -177,7 +177,7 @@ export default function ProfilePersonalDetails({
               value={personal.phone}
               onChange={(e) => update('phone', e.target.value)}
               placeholder="Add later"
-              className="input-brutal"
+              className="input-brutal text-ink/70 placeholder:text-ink/55"
               type="tel"
             />
           </div>
@@ -190,7 +190,7 @@ export default function ProfilePersonalDetails({
               value={personal.location}
               onChange={(e) => update('location', e.target.value)}
               placeholder="Add later"
-              className="input-brutal"
+              className="input-brutal text-ink/70 placeholder:text-ink/55"
             />
           </div>
 
@@ -202,7 +202,7 @@ export default function ProfilePersonalDetails({
               value={personal.address}
               onChange={(e) => update('address', e.target.value)}
               placeholder="Add later"
-              className="input-brutal"
+              className="input-brutal text-ink/70 placeholder:text-ink/55"
             />
           </div>
         </div>

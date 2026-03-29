@@ -55,7 +55,23 @@ export function useProfileForm(toast) {
     setLoading(true)
     try {
       const data = await profileService.getMyProfile()
-      if (!mountedRef.current || !data) {
+      if (!mountedRef.current) {
+        setLoading(false)
+        return
+      }
+
+      if (!data) {
+        setPersonal((prev) => ({
+          ...INITIAL_PERSONAL,
+          fullName: user?.name || '',
+          email: user?.email || '',
+        }))
+        setBio('')
+        setSocialLinks([''])
+        setResume(null)
+        setResumePublic(true)
+        setCertificates([])
+        setCertificatesPublic(true)
         setLoading(false)
         return
       }

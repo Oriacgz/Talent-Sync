@@ -11,12 +11,8 @@ def _match_faq(message: str) -> str | None:
     if re.search(r"^(hi|hello|hey|hii|yo|good\s*(morning|afternoon|evening))\b", text):
         return (
             "Hey! I am your TalentSync Career Assistant.\n\n"
-            "I can help you with:\n"
-            "- Resume and ATS improvements\n"
-            "- Interview preparation and shortlisting tips\n"
-            "- Skill roadmap based on your target roles\n"
-            "- Job search strategy and application planning\n\n"
-            "Try asking: How do I get shortlisted faster?"
+            "what can I help you with:\n"
+
         )
 
     if re.search(r"\b(thanks|thank\s*you|thx)\b", text):
