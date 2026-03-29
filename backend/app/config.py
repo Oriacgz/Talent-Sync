@@ -4,6 +4,7 @@
 # DEPENDS ON: pydantic-settings, .env file
 
 from pydantic_settings import BaseSettings
+import json
 
 
 class Settings(BaseSettings):
@@ -16,14 +17,24 @@ class Settings(BaseSettings):
     # LLM — Ollama (Llama 3.2)
     OLLAMA_BASE_URL: str = "http://localhost:11434"
     OLLAMA_MODEL: str = "llama3.2"
-    OLLAMA_TIMEOUT: int = 120  # seconds
+    OLLAMA_TIMEOUT: int = 5  # seconds (reduced to fail fast when Ollama missing)
 
     SBERT_MODEL_NAME: str = "all-MiniLM-L6-v2"
-    CORS_ORIGINS: list = ["http://localhost:5173"]
+    CORS_ORIGINS: list = ["http://localhost:5173", "http://localhost:3000"]
+    CORS_ORIGIN_REGEX: str = r"^https?://(localhost|127\.0\.0\.1)(:\d+)?$"
 
     class Config:
         env_file = ".env"
         extra = "ignore"
+
+    def __init__(self, **data):
+        super().__init__(**data)
+        # Parse CORS_ORIGINS from env if it's a string (JSON array)
+        if isinstance(self.CORS_ORIGINS, str):
+            try:
+                self.CORS_ORIGINS = json.loads(self.CORS_ORIGINS)
+            except (json.JSONDecodeError, TypeError):
+                self.CORS_ORIGINS = ["http://localhost:5173"]
 
 
 settings = Settings()

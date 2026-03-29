@@ -41,9 +41,17 @@ apiClient.interceptors.response.use(
         originalRequest.headers['Authorization'] = `Bearer ${res.data.access_token}`;
         return apiClient(originalRequest);
       } catch (err) {
-        useAuthStore.getState().clearAuth();
-        window.location.href = '/login';
-        return Promise.reject(err);
+        const refreshStatus = err?.response?.status;
+        // Only force logout if refresh token is invalid/expired.
+        if (refreshStatus === 401 || refreshStatus === 403 || err?.message === 'No refresh token') {
+          useAuthStore.getState().clearAuth();
+          window.location.href = '/login';
+          return Promise.reject(err);
+        }
+
+        // For transient errors (network/timeout/5xx), keep user logged in
+        // and let the original caller show a non-blocking error message.
+        return Promise.reject(error);
       }
     }
     return Promise.reject(error);

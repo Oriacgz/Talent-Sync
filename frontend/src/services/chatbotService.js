@@ -13,11 +13,14 @@ export const chatbotService = {
    * @param {string|null} sessionId - Existing session ID (null for new session)
    * @returns {Promise<{response: string, session_id: string, mode: string, onboarding_step?: string, profile_complete: boolean, intent?: string}>}
    */
-  sendMessage: async (message, sessionId = null) => {
+  sendMessage: async (message, sessionId = null, options = {}) => {
     try {
       const payload = { message };
       if (sessionId) {
         payload.session_id = sessionId;
+      }
+      if (options?.forceAssistant) {
+        payload.force_assistant = true;
       }
       const response = await apiClient.post("/api/chat", payload);
       return response?.data || {

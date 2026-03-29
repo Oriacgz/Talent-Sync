@@ -14,6 +14,7 @@ app = FastAPI(title="TalentSync API", version="1.0.0")
 
 app.add_middleware(CORSMiddleware,
     allow_origins=settings.CORS_ORIGINS,
+    allow_origin_regex=settings.CORS_ORIGIN_REGEX,
     allow_credentials=True, allow_methods=["*"], allow_headers=["*"])
 
 app.include_router(auth.router)

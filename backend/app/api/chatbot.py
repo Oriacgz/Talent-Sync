@@ -36,6 +36,7 @@ async def chat(
             user_id=user_id,
             message=payload.message,
             session_id=payload.session_id,
+            force_assistant=payload.force_assistant,
         )
         return ChatResponse(**result)
     except Exception as exc:

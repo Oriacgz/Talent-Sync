@@ -287,8 +287,8 @@ export default function FloatingCareerAssistant() {
   // Persist session ID
   useEffect(() => {
     if (sessionId) {
-      try { 
-        window.localStorage.setItem(ASSISTANT_SESSION_KEY, sessionId) 
+      try {
+        window.localStorage.setItem(ASSISTANT_SESSION_KEY, sessionId)
       } catch (err) {
         console.error('Failed to save session ID:', err)
       }
@@ -312,7 +312,7 @@ export default function FloatingCareerAssistant() {
     setIsSending(true)
 
     try {
-      const response = await chatbotService.sendMessage(text, sessionId)
+      const response = await chatbotService.sendMessage(text, sessionId, { forceAssistant: true })
 
       if (response?.session_id) {
         setSessionId(response.session_id)
