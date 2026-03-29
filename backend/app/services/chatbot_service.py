@@ -20,10 +20,16 @@ from typing import Any
 from prisma import Json
 
 from app.db.database import get_prisma
-from app.services.assistant_service import handle_career_intent
 from app.services import llm_provider
 
 logger = logging.getLogger(__name__)
+
+
+def _get_career_intent_handler():
+    """Lazy import to avoid editor import resolution issues in some workspace setups."""
+    from .assistant_service import handle_career_intent
+
+    return handle_career_intent
 
 
 # ─────────────────────────────────────────────
@@ -1049,6 +1055,7 @@ async def process_message(
             for m in reversed(recent_msgs)
         ]
         profile_context = await build_context(user_id)
+        handle_career_intent = _get_career_intent_handler()
         response_text = await handle_career_intent(
             user_id=user_id,
             intent=intent,
