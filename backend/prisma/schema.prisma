@@ -7,9 +7,7 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-// ─────────────────────────────────────────────
-// ENUMS
-// ─────────────────────────────────────────────
+// ── ENUMS ──────────────────────────────────────────────────
 
 enum Role {
   STUDENT
@@ -31,62 +29,94 @@ enum MatchStatus {
   DECLINED
 }
 
-// ─────────────────────────────────────────────
-// 1. USERS
-// ─────────────────────────────────────────────
+enum JobType {
+  FULL_TIME
+  PART_TIME
+  INTERNSHIP
+  CONTRACT
+}
+
+enum WorkMode {
+  REMOTE
+  HYBRID
+  ONSITE
+}
+
+enum ExperienceLevel {
+  FRESHER
+  INTERN
+  JUNIOR
+  MID
+  SENIOR
+}
+
+// ── 1. USERS ───────────────────────────────────────────────
 
 model User {
   id              String    @id @default(uuid())
   email           String    @unique
+  name            String?   // ADDED: used by chatbot greeting
   passwordHash    String
   role            Role      @default(STUDENT)
   isVerified      Boolean   @default(false)
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @updatedAt
 
-  // Relations
   studentProfile    StudentProfile?
   recruiterProfile  RecruiterProfile?
   chatbotSessions   ChatbotSession[]
   notifications     Notification[]
 }
 
-// ─────────────────────────────────────────────
-// 2. STUDENT PROFILES
-// ─────────────────────────────────────────────
+// ── 2. STUDENT PROFILES ────────────────────────────────────
 
 model StudentProfile {
-  id                  String    @id @default(uuid())
-  userId              String    @unique
-  fullName            String
-  bio                 String?
-  college             String?
-  degree              String?
-  branch              String?
-  graduationYear      Int?
-  cgpa                Float?
-  location            String?
-  linkedinUrl         String?
-  githubUrl           String?
-  portfolioUrl        String?
-  resumeText          String?       // Extracted / typed resume text
-  preferredRoles      String[]      // e.g. ["Data Analyst", "ML Engineer"]
-  experienceLevel     String?       // "FRESHER" | "INTERN" | "EXPERIENCED"
-  preferredLocations  String[]      // e.g. ["Mumbai", "Remote"]
-  createdAt           DateTime  @default(now())
-  updatedAt           DateTime  @updatedAt
+  id                   String    @id @default(uuid())
+  userId               String    @unique
+  fullName             String
+  bio                  String?
+  college              String?
+  degree               String?
+  branch               String?
+  graduationYear       Int?
+  cgpa                 Float?
+  location             String?
+  linkedinUrl          String?
+  githubUrl            String?
+  portfolioUrl         String?
+  resumeUrl            String?    // ADDED: Cloudinary URL
+  resumePublic         Boolean   @default(true) // ADDED: visibility toggle
+  resumeText           String?
+  preferredRoles       String[]
+  experienceLevel      String?
+  preferredLocations   String[]
+  socialLinks          String[]  // ADDED: extra social links
+  certificationsPublic Boolean   @default(true) // ADDED: certs visibility
+  createdAt            DateTime  @default(now())
+  updatedAt            DateTime  @updatedAt
 
-  // Relations
   user            User              @relation(fields: [userId], references: [id], onDelete: Cascade)
   studentSkills   StudentSkill[]
   applications    Application[]
   matchScores     MatchScore[]
   embeddingCache  EmbeddingCache?
+  certifications  Certification[]  // ADDED
 }
 
-// ─────────────────────────────────────────────
-// 3. RECRUITER PROFILES
-// ─────────────────────────────────────────────
+// ── 2b. CERTIFICATIONS ─────────────────────────────────────
+
+model Certification {
+  id          String    @id @default(uuid())
+  studentId   String
+  name        String
+  url         String    // Cloudinary URL
+  publicId    String    // Cloudinary public_id
+  uploadedAt  DateTime  @default(now())
+
+  student     StudentProfile @relation(fields: [studentId], references: [id], onDelete: Cascade)
+}
+
+// ── 3. RECRUITER PROFILES ──────────────────────────────────
 
 model RecruiterProfile {
   id              String    @id @default(uuid())
@@ -101,109 +131,100 @@ model RecruiterProfile {
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @updatedAt
 
-  // Relations
   user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
   jobs            Job[]
 }
 
-// ─────────────────────────────────────────────
-// 4. SKILLS (Master List)
-// ─────────────────────────────────────────────
+// ── 4. SKILLS ──────────────────────────────────────────────
 
 model Skill {
   id              String    @id @default(uuid())
-  name            String    @unique  // e.g. "Python", "React", "Machine Learning"
-  category        String?           // e.g. "Programming", "Soft Skills", "Tools"
+  name            String    @unique
+  category        String?
   createdAt       DateTime  @default(now())
 
-  // Relations
   studentSkills   StudentSkill[]
   jobSkills       JobSkill[]
 }
 
-// ─────────────────────────────────────────────
-// 5. STUDENT SKILLS (Many-to-Many)
-// ─────────────────────────────────────────────
+// ── 5. STUDENT SKILLS ──────────────────────────────────────
 
 model StudentSkill {
   id              String    @id @default(uuid())
   studentId       String
   skillId         String
-  proficiency     String?   // "Beginner" | "Intermediate" | "Expert"
+  proficiency     String?
   yearsExp        Float?
 
-  // Relations
   student         StudentProfile  @relation(fields: [studentId], references: [id], onDelete: Cascade)
   skill           Skill           @relation(fields: [skillId], references: [id], onDelete: Cascade)
 
   @@unique([studentId, skillId])
 }
 
-// ─────────────────────────────────────────────
-// 6. JOBS
-// ─────────────────────────────────────────────
+// ── 6. JOBS ────────────────────────────────────────────────
 
 model Job {
-  id              String    @id @default(uuid())
-  recruiterId     String
-  title           String
-  description     String
-  location        String?
-  jobType         String?   // "Internship" | "Full-time" | "Part-time"
-  stipend         Float?
-  minCgpa         Float?
-  eligibleBranches String[] // e.g. ["CSE", "IT", "ECE"]
-  openings        Int       @default(1)
-  deadline        DateTime?
-  isActive        Boolean   @default(true)
-  createdAt       DateTime  @default(now())
-  updatedAt       DateTime  @updatedAt
+  id               String          @id @default(uuid())
+  recruiterId      String
+  title            String
+  description      String
+  location         String?
+  jobType          JobType         @default(FULL_TIME)
+  workMode         WorkMode        @default(ONSITE)
+  experienceLevel  ExperienceLevel @default(FRESHER)
+  education        String          @default("Any")
+  salaryMin        Int?
+  salaryMax        Int?
+  duration         String?
+  openings         Int             @default(1)
+  perks            String[]
+  aboutCompany     String?
+  minCgpa          Float?
+  eligibleBranches String[]
+  deadline         DateTime?
+  isActive         Boolean         @default(true)
+  createdAt        DateTime        @default(now())
+  updatedAt        DateTime        @updatedAt
 
-  // Relations
-  recruiter       RecruiterProfile  @relation(fields: [recruiterId], references: [id], onDelete: Cascade)
-  jobSkills       JobSkill[]
-  applications    Application[]
-  matchScores     MatchScore[]
-  embeddingCache  EmbeddingCache?
+  recruiter        RecruiterProfile  @relation(fields: [recruiterId], references: [id], onDelete: Cascade)
+  jobSkills        JobSkill[]
+  applications     Application[]
+  matchScores      MatchScore[]
+  embeddingCache   EmbeddingCache?
 }
 
-// ─────────────────────────────────────────────
-// 7. JOB SKILLS (Many-to-Many)
-// ─────────────────────────────────────────────
+// ── 7. JOB SKILLS ──────────────────────────────────────────
 
 model JobSkill {
   id              String    @id @default(uuid())
   jobId           String
   skillId         String
-  isRequired      Boolean   @default(true)  // Required vs Nice-to-have
-  weightage       Float     @default(1.0)   // Used in rule-based scoring
+  isRequired      Boolean   @default(true)
+  weightage       Float     @default(1.0)
 
-  // Relations
   job             Job       @relation(fields: [jobId], references: [id], onDelete: Cascade)
   skill           Skill     @relation(fields: [skillId], references: [id], onDelete: Cascade)
 
   @@unique([jobId, skillId])
 }
 
-// ─────────────────────────────────────────────
-// 8. MATCH SCORES
-// ─────────────────────────────────────────────
+// ── 8. MATCH SCORES ────────────────────────────────────────
 
 model MatchScore {
   id              String      @id @default(uuid())
   studentId       String
   jobId           String
-  similarityScore Float       // SBERT cosine similarity (0–1)
-  ruleScore       Float       // Rule-based score (0–1)
-  finalScore      Float       // 0.7 * similarity + 0.3 * rule
-  rank            Int?        // Rank among all candidates for this job
-  shapValues      Json?       // SHAP explanation { skill: contribution, ... }
-  explanation     String?     // Human-readable explanation string
+  similarityScore Float
+  ruleScore       Float
+  finalScore      Float
+  rank            Int?
+  shapValues      Json?
+  explanation     String?
   status          MatchStatus @default(PENDING)
   createdAt       DateTime    @default(now())
   updatedAt       DateTime    @updatedAt
 
-  // Relations
   student         StudentProfile  @relation(fields: [studentId], references: [id], onDelete: Cascade)
   job             Job             @relation(fields: [jobId], references: [id], onDelete: Cascade)
 
@@ -211,9 +232,7 @@ model MatchScore {
   @@index([jobId, finalScore(sort: Desc)])
 }
 
-// ─────────────────────────────────────────────
-// 9. APPLICATIONS
-// ─────────────────────────────────────────────
+// ── 9. APPLICATIONS ────────────────────────────────────────
 
 model Application {
   id              String            @id @default(uuid())
@@ -224,86 +243,73 @@ model Application {
   appliedAt       DateTime          @default(now())
   updatedAt       DateTime          @updatedAt
 
-  // Relations
   student         StudentProfile  @relation(fields: [studentId], references: [id], onDelete: Cascade)
   job             Job             @relation(fields: [jobId], references: [id], onDelete: Cascade)
 
   @@unique([studentId, jobId])
 }
 
-// ─────────────────────────────────────────────
-// 10. CHATBOT SESSIONS
-// ─────────────────────────────────────────────
+// ── 10. CHATBOT SESSIONS ───────────────────────────────────
 
 model ChatbotSession {
   id              String    @id @default(uuid())
   userId          String
-  messages        Json      // Legacy: array of { role, content }. Use chatMessages relation.
-  extractedData   Json?     // Structured JSON extracted from conversation
-  isComplete      Boolean   @default(false)  // Profile fully collected?
-  onboardingStep  String    @default("GREETING")  // State machine step
-  mode            String    @default("ONBOARDING") // ONBOARDING | CAREER_ASSISTANT
+  messages        Json
+  extractedData   Json?
+  isComplete      Boolean   @default(false)
+  onboardingStep  String    @default("GREETING")
+  mode            String    @default("ONBOARDING")
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @updatedAt
 
-  // Relations
-  user            User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user            User          @relation(fields: [userId], references: [id], onDelete: Cascade)
   chatMessages    ChatMessage[]
 }
 
-// ─────────────────────────────────────────────
-// 10b. CHAT MESSAGES (Normalized)
-// ─────────────────────────────────────────────
+// ── 10b. CHAT MESSAGES ─────────────────────────────────────
 
 model ChatMessage {
   id              String    @id @default(uuid())
   sessionId       String
-  role            String    // "user" | "assistant" | "system"
+  role            String
   content         String
-  intent          String?   // Detected intent (for analytics)
-  metadata        Json?     // Match results, SHAP data, etc.
+  intent          String?
+  metadata        Json?
   createdAt       DateTime  @default(now())
 
-  // Relations
   session         ChatbotSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
 
   @@index([sessionId, createdAt])
 }
 
-// ─────────────────────────────────────────────
-// 11. NOTIFICATIONS
-// ─────────────────────────────────────────────
+// ── 11. NOTIFICATIONS ──────────────────────────────────────
 
 model Notification {
   id              String    @id @default(uuid())
   userId          String
   title           String
   message         String
-  type            String    // "MATCH" | "APPLICATION" | "STATUS_UPDATE" | "SYSTEM"
+  type            String
   isRead          Boolean   @default(false)
-  metadata        Json?     // Optional: { jobId, applicationId, matchId }
+  metadata        Json?
   createdAt       DateTime  @default(now())
 
-  // Relations
   user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId, isRead])
 }
 
-// ─────────────────────────────────────────────
-// BONUS: EMBEDDINGS CACHE
-// ─────────────────────────────────────────────
+// ── 12. EMBEDDINGS CACHE ───────────────────────────────────
 
 model EmbeddingCache {
   id              String    @id @default(uuid())
   studentId       String?   @unique
   jobId           String?   @unique
-  embedding       Float[]   // SBERT vector (384 dims for all-MiniLM-L6-v2)
-  inputHash       String    // MD5/SHA of input text — invalidate on change
+  embedding       Float[]
+  inputHash       String
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @updatedAt
 
-  // Relations
   student         StudentProfile?  @relation(fields: [studentId], references: [id], onDelete: Cascade)
   job             Job?             @relation(fields: [jobId], references: [id], onDelete: Cascade)
 }
