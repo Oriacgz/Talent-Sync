@@ -21,12 +21,12 @@ function SHAPChart({ shapValues = {}, totalScore = 0 }) {
   )
 
   return (
-    <div className="brutal-panel">
-      <div className="mb-3 flex items-center justify-between">
-        <h3 className="text-sm font-semibold uppercase tracking-wider text-ink">Match Reasoning</h3>
-        <span className="font-mono text-xs text-ink/70">Factor Impact</span>
+    <div className="rounded-[8px] border border-(--border) bg-(--bg-card) p-5">
+      <div className="mb-4 flex items-center justify-between">
+        <h3 className="font-heading text-[13px] font-bold uppercase tracking-wider text-(--text-primary)">Match Reasoning</h3>
+        <span className="font-mono text-[10px] font-bold text-(--text-muted)">FACTOR IMPACT</span>
       </div>
-      <p className="mb-3 text-xs text-ink/65">Longer bars have stronger influence on the final match score.</p>
+      <p className="mb-5 text-[12px] leading-relaxed text-(--text-secondary)">Longer bars indicate a stronger mathematical influence on your final match score.</p>
 
       {entries.length === 0 ? (
         <p className="text-sm text-ink/70">No explainability data available yet.</p>
@@ -38,14 +38,14 @@ function SHAPChart({ shapValues = {}, totalScore = 0 }) {
             const positive = numeric >= 0
             const isTop = index < 2
             return (
-              <div key={feature} className="space-y-1">
-                <div className="flex items-center justify-between text-xs text-ink/80">
-                  <span className={isTop ? 'font-semibold text-ink' : ''}>{feature}</span>
-                  <span className="font-mono">{positive ? '+' : ''}{numeric.toFixed(2)}</span>
+              <div key={feature} className="space-y-1.5 flex flex-col">
+                <div className="flex items-center justify-between text-[12px] text-(--text-secondary)">
+                  <span className={isTop ? 'font-semibold text-(--text-primary)' : ''}>{feature}</span>
+                  <span className="font-mono text-[11px] font-medium">{positive ? '+' : ''}{numeric.toFixed(2)}</span>
                 </div>
-                <div className="h-2.5 w-full overflow-hidden rounded-[2px] border border-ink/40 bg-ink/10">
+                <div className="h-2 w-full overflow-hidden rounded-full bg-(--bg-subtle)">
                   <div
-                    className={`h-full ${positive ? 'bg-yellow' : 'bg-pink'}`}
+                    className={`h-full rounded-full transition-all duration-700 ease-out ${positive ? 'bg-(--accent-yellow)' : 'bg-(--danger)'}`}
                     style={{ width }}
                   />
                 </div>
@@ -55,8 +55,8 @@ function SHAPChart({ shapValues = {}, totalScore = 0 }) {
         </div>
       )}
 
-      <div className="mt-4 border-t-2 border-[var(--border)] pt-3 text-sm text-ink/80">
-        Final match score: <span style={{ color: getMatchColor(totalScore) }}>{scoreToPercent(totalScore)}</span>
+      <div className="mt-6 border-t border-(--border) pt-4 text-[13px] font-medium text-(--text-secondary)">
+        Calculated alignment: <span className="font-bold font-mono" style={{ color: getMatchColor(totalScore) }}>{scoreToPercent(totalScore)}</span>
       </div>
     </div>
   )

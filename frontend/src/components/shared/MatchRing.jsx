@@ -30,7 +30,7 @@ function MatchRing({ score = 0, size = 56, strokeWidth = 6 }) {
           cx={size / 2}
           cy={size / 2}
           r={radius}
-          stroke="rgba(10,10,10,0.2)"
+          stroke="var(--border)"
           strokeWidth={strokeWidth}
           fill="none"
         />
@@ -47,7 +47,7 @@ function MatchRing({ score = 0, size = 56, strokeWidth = 6 }) {
           style={{ transition: 'stroke-dashoffset 450ms ease, stroke 450ms ease' }}
         />
       </svg>
-      <span className="absolute text-xs font-bold text-ink">{scoreToPercent(safeScore)}</span>
+      <span className="absolute text-[11px] font-bold font-mono text-(--text-primary)">{scoreToPercent(safeScore)}</span>
     </div>
   )
 }

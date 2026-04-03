@@ -155,53 +155,58 @@ export default function OnboardingPage() {
   }
 
   return (
-    <section className="stack-base">
+    <div className="flex flex-col gap-8 pb-12 w-full max-w-none">
       <header className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div>
-          <h1 className="text-primary-hero">Profile Onboarding</h1>
-          <p className="text-secondary">Answer quick questions to generate a richer profile.</p>
+          <h1 className="font-heading text-[26px] font-bold text-(--text-primary)">Profile Onboarding</h1>
+          <p className="font-sans text-[14px] text-(--text-secondary)">Answer quick questions to generate a richer profile.</p>
         </div>
         <button
           onClick={handleReset}
-          className="btn-secondary whitespace-nowrap px-3 py-1.5 text-[13px]"
+          className="flex items-center gap-1.5 rounded-[6px] bg-(--bg-subtle) px-3 py-1.5 font-heading text-[13px] font-medium text-(--text-primary) border border-(--border) hover:bg-(--bg-card) transition-colors"
           title="Restart Onboarding Session"
           type="button"
         >
-          <RefreshCw className="mr-2 inline h-[14px] w-[14px]" /> Restart
+          <RefreshCw size={14} className="inline-block" />
+          <span>Restart</span>
         </button>
       </header>
 
-      <div className="card-base">
-        <div className="mb-4 h-72 space-y-2 overflow-y-auto rounded-[4px] border-2 border-[var(--border)] bg-[var(--bg)] p-4 shadow-[3px_3px_0px_var(--border)]">
+      <div className="flex flex-col gap-4 rounded-[8px] border border-(--border) bg-(--bg-card) p-6">
+        <div className="mb-4 h-[400px] space-y-4 overflow-y-auto rounded-[8px] bg-(--bg-subtle)/50 p-6 scroll-smooth" style={{ scrollbarWidth: 'none' }}>
           {messages.length === 0 ? (
-            <div className="surface-muted border-dashed text-sm text-ink/70">
-              Starting your onboarding session...
+            <div className="flex h-full flex-col items-center justify-center text-center px-6">
+              <span className="flex h-10 w-10 items-center justify-center rounded-[8px] border border-(--border) bg-(--bg-subtle) text-(--accent-yellow) font-heading text-xs font-bold">TS</span>
+              <p className="mt-4 text-[13px] text-(--text-muted)">Starting your onboarding session...</p>
             </div>
           ) : null}
           {messages.map((item, index) => (
             <div
               key={`${item.role}-${index}`}
-              className={`rounded-[4px] border-2 px-3 py-2 text-sm ${
-                item.role === 'user'
-                  ? 'border-[var(--border)] bg-[var(--yellow)]/40 text-ink'
-                  : 'border-[var(--border)] bg-[var(--bg-soft)] text-ink/80'
-              }`}
+              className={`flex ${item.role === 'user' ? 'justify-end animate-in fade-in slide-in-from-bottom-2' : 'justify-start'}`}
             >
-              {item.content}
+              <div
+                className={`max-w-[85%] rounded-[12px] px-4 py-2.5 text-[13.5px] leading-relaxed border ${
+                  item.role === 'user'
+                    ? 'bg-(--accent-yellow) border-transparent rounded-tr-none text-[#09090B] font-medium'
+                    : 'bg-(--bg-card) border-(--border) rounded-tl-none text-(--text-primary)'
+                }`}
+              >
+                {item.content}
+              </div>
             </div>
           ))}
           {assistantTyping ? (
-            <div className="rounded-[4px] border-2 border-[var(--border)] bg-[var(--bg-soft)] px-3 py-2 text-sm text-ink/80">
-              TalentSync is typing
-              <span className="ml-1 inline-block animate-pulse">.</span>
-              <span className="inline-block animate-pulse [animation-delay:150ms]">.</span>
-              <span className="inline-block animate-pulse [animation-delay:300ms]">.</span>
+            <div className="flex justify-start">
+              <div className="rounded-[12px] rounded-tl-none border border-(--border) bg-(--bg-card) px-4 py-2.5 text-[13px] text-(--text-primary)">
+                TalentSync is typing...
+              </div>
             </div>
           ) : null}
           <div ref={messagesEndRef} />
         </div>
 
-        <div className="flex flex-col gap-2 sm:flex-row">
+        <div className="flex flex-col gap-3 sm:flex-row border-t border-(--border) pt-6">
           <input
             value={message}
             onChange={(event) => setMessage(event.target.value)}
@@ -211,15 +216,15 @@ export default function OnboardingPage() {
                 sendMessage()
               }
             }}
-            placeholder="Type your message..."
+            placeholder="Type your response..."
             disabled={loading || assistantTyping}
-            className="input-brutal flex-1"
+            className="flex-1 rounded-[8px] border border-(--border) bg-(--bg-card) px-4 py-2.5 text-[14px] text-(--text-primary) placeholder:text-(--text-muted) focus:border-(--accent-yellow) focus:outline-none transition-all"
           />
           <button
             type="button"
             disabled={loading || assistantTyping}
             onClick={sendMessage}
-            className="btn-primary btn-feedback disabled:opacity-60"
+            className="rounded-[8px] bg-(--accent-yellow) px-6 py-2.5 font-heading text-[13.5px] font-bold uppercase text-[#09090B] transition-all hover:opacity-90 disabled:opacity-50"
           >
             {loading || assistantTyping ? 'Sending...' : 'Send'}
           </button>
@@ -230,11 +235,15 @@ export default function OnboardingPage() {
         <button
           type="button"
           onClick={() => navigate('/student/matches')}
-          className="btn-secondary btn-feedback w-full sm:w-fit"
+          className="rounded-[8px] bg-(--text-primary) px-6 py-3 font-heading text-[14px] font-bold uppercase tracking-wider text-(--bg-base) transition-all hover:opacity-90 w-full sm:w-fit"
         >
           View My Matches
         </button>
       ) : null}
-    </section>
+
+      <div className="hidden" aria-hidden="true">
+        <title>Identity Onboarding | TalentSync</title>
+      </div>
+    </div>
   )
 }
