@@ -5,103 +5,116 @@ TalentSync is an AI-driven internship matching platform with:
 - Frontend: React + Vite
 - Database: PostgreSQL
 
-## Prerequisites
-- Python 3.11 recommended
-- Node.js 18+ and npm
-- Gemini API key from https://aistudio.google.com/app/apikey
-- PostgreSQL running locally on your machine
+## Run Whole Project (3 Terminals, Windows PowerShell)
 
-## 1) Backend Local Setup
+Use 3 terminals to run the full project:
+- Terminal 1: Database
+- Terminal 2: Backend
+- Terminal 3: Frontend
 
-### 1.1 Create env file
-From project root:
+### One-Time Setup
 
-```bash
-cd backend
-cp .env.example .env
-```
-
-Open `.env` and set:
-
-```env
-GEMINI_API_KEY=your_real_key_here
-```
-
-### 1.2 Create virtual environment and install dependencies
-
-If `backend/.venv` already exists, reuse it and skip creating a new one.
-
-```bash
-cd backend
-py -3.11 -m venv .venv
-```
-
-Windows (PowerShell):
+Run these once before first start.
 
 ```powershell
-.\.venv\Scripts\Activate.ps1
-python -m pip install --upgrade pip
-pip install -r requirements.txt
+# from project root
+cd C:\Talent-Sync\Talent-Sync\backend
+Copy-Item .env.example .env
 ```
 
-macOS/Linux:
+Check `backend/.env` and update values only if needed:
 
-```bash
-source .venv/bin/activate
-python -m pip install --upgrade pip
-pip install -r requirements.txt
+```env
+DATABASE_URL=postgresql://talentsync:talentsync@localhost:5432/talentsync
+JWT_SECRET=change_this_to_something_long_and_random
+OLLAMA_BASE_URL=http://localhost:11434
+OLLAMA_MODEL=llama3.2
+CORS_ORIGINS=["http://localhost:5173", "http://localhost:3000"]
 ```
 
-### 1.3 Generate Prisma client and apply migrations
+Keep the other values from `.env.example` as they are unless you want to change Ollama or token settings.
 
-```bash
-cd backend
+### Use Llama 3.2 (Ollama)
+
+If you want AI chatbot replies from Llama 3.2, run Ollama locally.
+
+1. Install Ollama from https://ollama.com/download
+2. Pull model:
+
+```powershell
+ollama pull llama3.2
+```
+
+3. Start Ollama service (if not already running):
+
+```powershell
+ollama serve
+```
+
+4. Quick check:
+
+```powershell
+ollama list
+Invoke-WebRequest http://localhost:11434 -UseBasicParsing
+```
+
+When Ollama is running, backend chat endpoints use Llama 3.2 automatically.
+
+Install backend dependencies and prepare Prisma (reuse existing `backend/.venv`):
+
+```powershell
+cd C:\Talent-Sync\Talent-Sync\backend
+& .\.venv\Scripts\Activate.ps1
+python -m pip install --upgrade pip
+python -m pip install -r requirements.txt
+$env:PATH = "$(Resolve-Path .\.venv\Scripts);$env:PATH"
 python -m prisma py fetch
 python -m prisma py generate --schema prisma/schema.prisma
 python -m prisma migrate deploy --schema prisma/schema.prisma
 ```
 
-### 1.4 (Optional) Seed demo data
+Install frontend dependencies:
 
-```bash
-cd backend
-python -m app.db.seed
-```
-
-### 1.5 Run backend server
-
-```bash
-cd backend
-
-(if got any error pls run this command)
-python -m uvicorn --env-file .env --app-dir . app.main:app --host 0.0.0.0 --port 8000 --reload
-
-OR
-
-uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
-```
-
-Backend URLs:
-- API: http://localhost:8000
-- Swagger: http://localhost:8000/docs
-
-## 2) Frontend Local Setup
-
-```bash
-cd frontend
+```powershell
+cd C:\Talent-Sync\Talent-Sync\frontend
 npm install
-npm run dev
 ```
 
-Frontend URL:
-- App: http://localhost:5173
+### Terminal 1 - Start Database
 
-## Quick Troubleshooting
-- If `pip install -r requirements.txt` fails with `ResolutionImpossible` (`spacy` vs `fastapi-cli` / `typer`), ensure you are on Python 3.11 and re-run after pulling latest `backend/requirements.txt`.
-- If `google.generativeai` import fails, reinstall backend dependencies in the active venv.
-- If Prisma commands fail, make sure you are running them from `backend` directory.
-- If backend startup fails with `The Client hasn't been generated yet`, run:
-	- `python -m prisma py generate --schema prisma/schema.prisma`
-- If backend startup fails with `ImportError: email-validator is not installed`, run:
-	- `pip install -r requirements.txt`
-- If backend startup fails with `Environment variable not found: DATABASE_URL`, ensure `backend/.env` exists and run backend with `--env-file .env`.
+```powershell
+cd C:\Talent-Sync\Talent-Sync
+docker compose up -d db
+```
+
+### Terminal 2 - Start Backend (existing venv)
+
+```powershell
+cd C:\Talent-Sync\Talent-Sync\backend
+& .\.venv\Scripts\Activate.ps1
+$env:PATH = "$(Resolve-Path .\.venv\Scripts);$env:PATH"
+python -m uvicorn --env-file .env --app-dir . app.main:app --host 0.0.0.0 --port 8000 --reload
+```
+
+### Terminal 3 - Start Frontend
+
+```powershell
+cd C:\Talent-Sync\Talent-Sync\frontend
+npm run dev -- --host 0.0.0.0 --port 5173
+```
+
+### URLs
+
+- Frontend: http://localhost:5173
+- Backend API: http://localhost:8000
+- Backend Docs: http://localhost:8000/docs
+
+### Stop Services
+
+- Stop backend/frontend: `Ctrl + C` in each terminal
+- Stop database:
+
+```powershell
+cd C:\Talent-Sync\Talent-Sync
+docker compose down
+```
