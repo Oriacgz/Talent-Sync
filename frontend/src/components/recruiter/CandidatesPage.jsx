@@ -1,45 +1,83 @@
 import { memo, useCallback, useEffect, useMemo, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
+import { ChevronRight, Filter, Search } from 'lucide-react'
 import { matchService } from '../../services/matchService'
 import { buildMatchNarrative, topShapReasons } from '../../utils/formatters'
 import EmptyState from '../shared/EmptyState'
 import MatchRing from '../shared/MatchRing'
 import { SkeletonCard } from '../shared/Skeletons'
-import SkillTag from '../shared/SkillTag'
 
-const CandidateListItem = memo(function CandidateListItem({ candidate, index, onViewDetail }) {
+function getTopSkills(skills) {
+  if (!skills) return []
+  return skills.slice(0, 3)
+}
+
+function TableRow({ candidate, index, onViewDetail }) {
+  const topReasons = topShapReasons(candidate.shapValues, 2)
+  const skills = getTopSkills(candidate.skills)
+
   return (
-    <article className="list-item card-hover">
-      <div className="min-w-0 flex-1">
-        <p className="badge w-fit border-cyan bg-cyan/20 text-ink">Rank #{index + 1}</p>
-        <p className="truncate text-base font-semibold">{candidate.fullName || 'Candidate'}</p>
-        <p className="truncate text-secondary">{candidate.college || 'College'} · GPA {candidate.gpa ?? '-'}</p>
-        <div className="mt-2 flex flex-wrap gap-2">
-          {(candidate.skills || []).slice(0, 4).map((skill) => (
-            <SkillTag key={`${candidate.id}-${skill}`} skill={skill} />
-          ))}
+    <tr
+      onClick={() => onViewDetail(candidate.id)}
+      className="group cursor-pointer border-b border-(--border) bg-(--bg-base) transition-colors hover:bg-(--bg-subtle)"
+    >
+      <td className="px-4 py-4">
+        <div className="flex items-center gap-3">
+          <div className="flex h-8 w-8 items-center justify-center rounded-full bg-(--text-primary) text-[11px] font-bold text-(--bg-base)">
+            #{index + 1}
+          </div>
+          <div>
+            <p className="font-heading text-[14px] font-bold text-(--text-primary)">
+              {candidate.fullName || 'Candidate'}
+            </p>
+            <p className="font-sans text-[12px] text-(--text-secondary)">
+              {candidate.college || 'College'} <span className="opacity-50 mx-1">•</span> GPA {candidate.gpa ?? '-'}
+            </p>
+          </div>
         </div>
-        <p className="mt-2 text-xs text-ink/75">{buildMatchNarrative(candidate)}</p>
-        <div className="surface-info mt-3 text-xs text-ink/75">
-          {topShapReasons(candidate.shapValues, 2).map((reason) => (
-            <p key={`${candidate.id}-${reason.feature}`}>{reason.feature}: {reason.value >= 0 ? '+' : ''}{reason.value.toFixed(2)}</p>
-          ))}
+      </td>
+      
+      <td className="px-4 py-4 align-top">
+        <div className="flex flex-wrap gap-1.5 mt-1">
+          {skills.length > 0 ? (
+            skills.map((skill) => (
+              <span key={`${candidate.id}-${skill}`} className="rounded-[4px] border border-(--border) bg-(--bg-card) px-2 py-0.5 text-[11px] font-medium text-(--text-primary)">
+                {skill}
+              </span>
+            ))
+          ) : (
+            <span className="text-[11px] text-(--text-muted)">No skills listed</span>
+          )}
+          {candidate.skills?.length > 3 && (
+             <span className="rounded-[4px] bg-(--bg-subtle) px-2 py-0.5 text-[11px] font-medium text-(--text-secondary)">
+               +{candidate.skills.length - 3}
+             </span>
+          )}
         </div>
-      </div>
+      </td>
 
-      <div className="mt-2 flex w-full items-center justify-between gap-3 sm:mt-0 sm:w-auto sm:justify-start">
-        <MatchRing score={candidate.score || 0} />
-        <button
-          type="button"
-          onClick={() => onViewDetail(candidate.id)}
-          className="btn-secondary btn-feedback w-full sm:w-auto"
-        >
-          View Detail
-        </button>
-      </div>
-    </article>
+      <td className="px-4 py-4 max-w-[250px] align-top">
+        <div className="flex items-center gap-2 mb-1.5">
+          <MatchRing score={candidate.score || 0} size={28} strokeWidth={4} />
+          <span className="font-sans text-[13px] font-semibold text-(--accent-cyan)">
+             {Math.round((candidate.score || 0) * 100)}% Match
+          </span>
+        </div>
+        <div className="flex flex-col gap-0.5">
+          {topReasons.map((reason) => (
+            <span key={`${candidate.id}-${reason.feature}`} className="font-sans text-[11px] text-(--text-muted) truncate">
+              {reason.feature}: {reason.value >= 0 ? '+' : ''}{reason.value.toFixed(2)}
+            </span>
+          ))}
+        </div>
+      </td>
+      
+      <td className="px-4 py-4 align-middle text-right pr-6">
+        <ChevronRight size={18} className="inline-block text-(--text-muted) transition-colors group-hover:text-(--text-primary)" />
+      </td>
+    </tr>
   )
-})
+}
 
 export default function CandidatesPage() {
   const navigate = useNavigate()
@@ -57,25 +95,19 @@ export default function CandidatesPage() {
       setLoading(true)
       setError('')
       const data = await matchService.getJobCandidates(jobId)
-      if (!active) {
-        return
-      }
+      if (!active) return
       setCandidates(Array.isArray(data) ? data : [])
       setLoading(false)
     }
 
     load().catch((loadError) => {
-      if (!active) {
-        return
-      }
+      if (!active) return
       setCandidates([])
       setError(loadError?.message || 'Unable to load candidates right now.')
       setLoading(false)
     })
 
-    return () => {
-      active = false
-    }
+    return () => { active = false }
   }, [jobId, reloadTick])
 
   const sortedCandidates = useMemo(
@@ -88,42 +120,36 @@ export default function CandidatesPage() {
   }, [navigate])
 
   return (
-    <section className="stack-base">
-      <header>
-        <h1 className="text-primary-hero">Candidates</h1>
-        <p className="text-secondary">
-          {jobId
-            ? 'Showing ranked candidates for the selected job posting.'
-            : 'Ranked candidates sorted by AI match quality.'}
-        </p>
+    <section className="flex flex-col gap-8 pb-12 w-full max-w-none">
+      <header className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <h1 className="font-heading text-[26px] font-bold text-(--text-primary)">Candidates Pipeline</h1>
+          <p className="font-sans text-[14px] text-(--text-secondary)">
+            {jobId
+              ? `Ranked matching results for job posting #${jobId.slice(0, 6)}...`
+              : 'All candidates ranked by AI match quality.'}
+          </p>
+        </div>
+        <div className="flex items-center gap-3">
+          {jobId && (
+            <button
+              onClick={() => navigate('/recruiter/candidates')}
+              className="rounded-[6px] border border-(--border-strong) bg-(--bg-base) px-4 py-2 font-sans text-[13px] font-medium text-(--text-primary) transition-colors hover:bg-(--bg-subtle)"
+            >
+              Clear Filter
+            </button>
+          )}
+          <button
+            onClick={() => navigate('/how-matching-works')}
+            className="flex items-center gap-2 rounded-[6px] border border-(--border) bg-(--bg-subtle) px-4 py-2 font-sans text-[13px] font-medium text-(--text-primary) transition-colors hover:border-(--accent-yellow)"
+          >
+             <Filter size={14} /> Matching Details
+          </button>
+        </div>
       </header>
 
-      {jobId ? (
-        <article className="surface-info flex flex-wrap items-center justify-between gap-3 text-xs text-ink/85">
-          <p className="min-w-0 wrap-break-word">Filtered by job ID: {jobId}</p>
-          <button
-            type="button"
-            onClick={() => navigate('/recruiter/candidates')}
-            className="btn-secondary btn-feedback"
-          >
-            Clear Filter
-          </button>
-        </article>
-      ) : null}
-
-      <article className="card-base flex flex-col items-start gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <p className="text-xs text-ink/80">Candidate ranking uses profile-job alignment and explainability factors.</p>
-        <button
-          type="button"
-          onClick={() => navigate('/how-matching-works')}
-          className="btn-secondary btn-feedback"
-        >
-          How Matching Works
-        </button>
-      </article>
-
       {loading ? (
-        <div className="stack-list">
+        <div className="flex flex-col gap-4">
           <SkeletonCard />
           <SkeletonCard />
         </div>
@@ -147,32 +173,47 @@ export default function CandidatesPage() {
             : 'Publish a job posting to start receiving candidate rankings.'}
           actionLabel={jobId ? 'Clear Filter' : 'Post a Job'}
           onAction={() => navigate(jobId ? '/recruiter/candidates' : '/recruiter/post-job')}
-          actionClassName="btn-secondary"
           icon="*"
         />
       ) : null}
 
-      {!loading && !error ? (
-        <div className="stack-list">
-          {sortedCandidates.map((candidate, index) => (
-            <CandidateListItem
-              key={candidate.id}
-              candidate={candidate}
-              index={index}
-              onViewDetail={onViewDetail}
-            />
-          ))}
+      {!loading && !error && candidates.length > 0 ? (
+        <div className="rounded-[8px] border border-(--border) bg-(--bg-card) overflow-x-auto shadow-sm">
+          <table className="w-full text-left font-sans min-w-[800px] border-collapse">
+            <thead className="border-b border-(--border) bg-(--bg-subtle)">
+              <tr>
+                <th className="px-4 py-3 text-[11px] font-semibold uppercase tracking-widest text-(--text-muted) w-[35%]">
+                  Candidate Info
+                </th>
+                <th className="px-4 py-3 text-[11px] font-semibold uppercase tracking-widest text-(--text-muted) w-[30%]">
+                  Top Skills
+                </th>
+                <th className="px-4 py-3 text-[11px] font-semibold uppercase tracking-widest text-(--text-muted) w-[30%]">
+                  Match Analysis
+                </th>
+                <th className="px-4 py-3 text-[11px] font-semibold uppercase tracking-widest text-(--text-muted) w-[5%] text-right pr-6">
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              {sortedCandidates.map((candidate, index) => (
+                <TableRow
+                  key={candidate.id}
+                  candidate={candidate}
+                  index={index}
+                  onViewDetail={onViewDetail}
+                />
+              ))}
+            </tbody>
+          </table>
         </div>
       ) : null}
-      {/* SEO Metadata heuristic fix */}
+
+      {/* SEO */}
       <div className="hidden" aria-hidden="true">
         <title>Candidates | TalentSync Recruiter</title>
         <meta name="description" content="View and manage ranked candidates for your job postings with AI-driven match quality scores." />
-        <meta property="og:title" content="Candidates | TalentSync Recruiter" />
-        <meta property="og:description" content="View and manage ranked candidates for your job postings with AI-driven match quality scores." />
       </div>
     </section>
   )
 }
-
-// Accessibility check handled: aria-label

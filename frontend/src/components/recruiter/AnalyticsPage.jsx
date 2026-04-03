@@ -1,10 +1,3 @@
-/*
- * WHO WRITES THIS: Frontend developer
- * WHAT THIS DOES: Recruiter analytics dashboard. Stat cards: total applicants,
- *                 shortlisted, avg match score, days to hire.
- *                 Bar chart: top skills. Line chart: applications per day.
- * DEPENDS ON: analyticsService, recharts
- */
 import { useEffect, useState } from 'react'
 import { Bar, BarChart, CartesianGrid, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
 import { analyticsService } from '../../services/analyticsService'
@@ -23,9 +16,7 @@ export default function AnalyticsPage() {
       setLoading(true)
       setError('')
       const data = await analyticsService.getRecruiterAnalytics()
-      if (!active) {
-        return
-      }
+      if (!active) return
       setAnalytics(data || {})
       setLoading(false)
     }
@@ -38,9 +29,7 @@ export default function AnalyticsPage() {
       }
     })
 
-    return () => {
-      active = false
-    }
+    return () => { active = false }
   }, [reloadTick])
 
   const totals = analytics.totals || {}
@@ -50,7 +39,7 @@ export default function AnalyticsPage() {
 
   if (loading) {
     return (
-      <section className="stack-base">
+      <section className="flex flex-col gap-6 pb-12 w-full max-w-none">
         <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-5">
           <SkeletonCard className="min-h-[110px]" />
           <SkeletonCard className="min-h-[110px]" />
@@ -59,8 +48,8 @@ export default function AnalyticsPage() {
           <SkeletonCard className="min-h-[110px]" />
         </div>
         <div className="grid gap-4 lg:grid-cols-2">
-          <SkeletonCard className="min-h-[300px]" />
-          <SkeletonCard className="min-h-[300px]" />
+          <SkeletonCard className="min-h-[340px]" />
+          <SkeletonCard className="min-h-[340px]" />
         </div>
       </section>
     )
@@ -68,7 +57,7 @@ export default function AnalyticsPage() {
 
   if (error) {
     return (
-      <section className="stack-base">
+      <section className="flex flex-col pb-12 w-full max-w-none">
         <EmptyState
           title="Analytics unavailable"
           subtitle={error}
@@ -81,10 +70,10 @@ export default function AnalyticsPage() {
   }
 
   return (
-    <section className="stack-base">
+    <section className="flex flex-col gap-8 pb-12 w-full max-w-none">
       <header>
-        <h1 className="text-primary-hero">Recruiter Analytics</h1>
-        <p className="text-secondary">Pipeline health and candidate quality trends in a clear, low-clutter view.</p>
+        <h1 className="font-heading text-[26px] font-bold text-(--text-primary)">Recruiter Analytics</h1>
+        <p className="font-sans text-[14px] text-(--text-secondary) mt-1">Pipeline health and candidate quality trends overview.</p>
       </header>
 
       {!applicationsByDay.length && !topSkills.length ? (
@@ -96,60 +85,113 @@ export default function AnalyticsPage() {
       ) : null}
 
       <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-5">
-        <article className="brutal-stat border-l-[var(--cyan)]"><p className="text-tertiary">Applicants</p><p className="text-2xl font-bold">{totals.applicants || 0}</p></article>
-        <article className="brutal-stat border-l-[var(--cyan)]"><p className="text-tertiary">Total Matches</p><p className="text-2xl font-bold">{totalMatches}</p></article>
-        <article className="brutal-stat border-l-[var(--cyan)]"><p className="text-tertiary">Shortlisted</p><p className="text-2xl font-bold">{totals.shortlisted || 0}</p></article>
-        <article className="brutal-stat border-l-[var(--cyan)]"><p className="text-tertiary">Accepted</p><p className="text-2xl font-bold">{totals.accepted || 0}</p></article>
-        <article className="brutal-stat border-l-[var(--cyan)]"><p className="text-tertiary">Avg Score</p><p className="text-2xl font-bold">{Math.round((totals.averageMatchScore || 0) * 100)}%</p></article>
-      </div>
-
-      <div className="grid gap-4 lg:grid-cols-2">
-        <article className="card-base h-64 sm:h-72 md:h-80">
-          <p className="text-sm text-ink/70">Applications by Day</p>
-          <p className="mb-2 text-xs text-ink/60">Shows daily inbound application volume to track recruiter load.</p>
-          <ResponsiveContainer width="100%" height="100%">
-            <LineChart data={applicationsByDay}>
-              <CartesianGrid stroke="rgba(10,10,10,0.12)" vertical={false} />
-              <XAxis dataKey="day" stroke="#0A0A0A" axisLine={{ strokeWidth: 2 }} tickLine={{ strokeWidth: 2 }} tick={{ fontSize: 12 }} />
-              <YAxis stroke="#0A0A0A" axisLine={{ strokeWidth: 2 }} tickLine={{ strokeWidth: 2 }} />
-              <Tooltip />
-              <Line type="linear" dataKey="value" stroke="#00D9FF" strokeWidth={3} dot={{ r: 3, fill: '#0A0A0A' }} />
-            </LineChart>
-          </ResponsiveContainer>
+        <article className="rounded-[8px] border border-(--border) bg-(--bg-card) p-5 flex flex-col gap-1">
+          <p className="font-sans text-[12px] font-medium text-(--text-secondary)">Applicants</p>
+          <p className="font-heading text-[28px] font-bold text-(--text-primary)">{totals.applicants || 0}</p>
         </article>
-
-        <article className="card-base h-64 sm:h-72 md:h-80">
-          <p className="text-sm text-ink/70">Top Skills Demand</p>
-          <p className="mb-2 text-xs text-ink/60">Highlights the most frequent skills in your applicant pool.</p>
-          <ResponsiveContainer width="100%" height="100%">
-            <BarChart data={topSkills}>
-              <CartesianGrid stroke="rgba(10,10,10,0.12)" vertical={false} />
-              <XAxis
-                dataKey="skill"
-                stroke="#0A0A0A"
-                axisLine={{ strokeWidth: 2 }}
-                tickLine={{ strokeWidth: 2 }}
-                tick={{ fontSize: 11 }}
-                angle={-22}
-                textAnchor="end"
-                height={56}
-                interval={0}
-              />
-              <YAxis stroke="#0A0A0A" axisLine={{ strokeWidth: 2 }} tickLine={{ strokeWidth: 2 }} />
-              <Tooltip />
-              <Bar dataKey="count" fill="#00D9FF" radius={[0, 0, 0, 0]} />
-            </BarChart>
-          </ResponsiveContainer>
+        <article className="rounded-[8px] border border-(--border) bg-(--bg-card) p-5 flex flex-col gap-1">
+          <p className="font-sans text-[12px] font-medium text-(--text-secondary)">Total Matches</p>
+          <p className="font-heading text-[28px] font-bold text-(--text-primary)">{totalMatches}</p>
+        </article>
+        <article className="rounded-[8px] border border-(--border) bg-(--bg-card) p-5 flex flex-col gap-1">
+          <p className="font-sans text-[12px] font-medium text-(--text-secondary)">Shortlisted</p>
+          <p className="font-heading text-[28px] font-bold text-(--text-primary)">{totals.shortlisted || 0}</p>
+        </article>
+        <article className="rounded-[8px] border border-(--border) bg-(--bg-card) p-5 flex flex-col gap-1">
+          <p className="font-sans text-[12px] font-medium text-(--text-secondary)">Accepted</p>
+          <p className="font-heading text-[28px] font-bold text-(--text-primary)">{totals.accepted || 0}</p>
+        </article>
+        <article className="rounded-[8px] border border-(--border) bg-(--bg-card) p-5 flex flex-col gap-1">
+          <p className="font-sans text-[12px] font-medium text-(--text-secondary)">Avg Score</p>
+          <p className="font-heading text-[28px] font-bold text-(--text-primary)">{Math.round((totals.averageMatchScore || 0) * 100)}%</p>
         </article>
       </div>
-      {/* SEO Metadata heuristic fix */}
+
+      <div className="grid gap-6 lg:grid-cols-2">
+        <article className="rounded-[8px] border border-(--border) bg-(--bg-card) p-6 h-80 flex flex-col">
+          <header className="mb-6">
+            <h2 className="font-heading text-[16px] font-bold text-(--text-primary)">Applications by Day</h2>
+            <p className="font-sans text-[13px] text-(--text-secondary)">Daily inbound application volume</p>
+          </header>
+          <div className="flex-1 min-h-0">
+            <ResponsiveContainer width="100%" height="100%">
+              <LineChart data={applicationsByDay}>
+                <CartesianGrid strokeDasharray="4 4" vertical={false} stroke="var(--border)" />
+                <XAxis 
+                  dataKey="day" 
+                  axisLine={false} 
+                  tickLine={false} 
+                  tick={{ fontSize: 12, fill: 'var(--text-muted)' }} 
+                  dy={10}
+                />
+                <YAxis 
+                  axisLine={false} 
+                  tickLine={false} 
+                  tick={{ fontSize: 12, fill: 'var(--text-muted)' }} 
+                  dx={-10}
+                />
+                <Tooltip 
+                  contentStyle={{ backgroundColor: 'var(--bg-card)', borderColor: 'var(--border)', borderRadius: '6px' }} 
+                  itemStyle={{ color: 'var(--accent-cyan)' }}
+                  labelStyle={{ color: 'var(--text-muted)' }}
+                />
+                <Line 
+                  type="monotone" 
+                  dataKey="value" 
+                  stroke="var(--accent-cyan)" 
+                  strokeWidth={2} 
+                  dot={{ r: 4, fill: 'var(--accent-cyan)', strokeWidth: 0 }} 
+                  activeDot={{ r: 6, fill: 'var(--accent-cyan)' }}
+                />
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
+        </article>
+
+        <article className="rounded-[8px] border border-(--border) bg-(--bg-card) p-6 h-80 flex flex-col">
+          <header className="mb-6">
+            <h2 className="font-heading text-[16px] font-bold text-(--text-primary)">Top Skills Demand</h2>
+            <p className="font-sans text-[13px] text-(--text-secondary)">Most frequent skills in applicant pool</p>
+          </header>
+          <div className="flex-1 min-h-0">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={topSkills}>
+                <CartesianGrid strokeDasharray="4 4" vertical={false} stroke="var(--border)" />
+                <XAxis
+                  dataKey="skill"
+                  axisLine={false}
+                  tickLine={false}
+                  tick={{ fontSize: 11, fill: 'var(--text-muted)' }}
+                  angle={-35}
+                  textAnchor="end"
+                  height={60}
+                  interval={0}
+                  dy={5}
+                />
+                <YAxis 
+                   axisLine={false} 
+                   tickLine={false} 
+                   tick={{ fontSize: 12, fill: 'var(--text-muted)' }} 
+                   dx={-10}
+                />
+                <Tooltip 
+                   contentStyle={{ backgroundColor: 'var(--bg-card)', borderColor: 'var(--border)', borderRadius: '6px' }}
+                   cursor={{ fill: 'var(--bg-subtle)' }}
+                   itemStyle={{ color: 'var(--accent-cyan)' }}
+                   labelStyle={{ color: 'var(--text-muted)' }}
+                />
+                <Bar dataKey="count" fill="var(--accent-cyan)" radius={[4, 4, 0, 0]} maxBarSize={40} />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        </article>
+      </div>
+      
+      {/* SEO */}
       <div className="hidden" aria-hidden="true">
         <title>Recruiter Analytics | TalentSync</title>
         <meta name="description" content="View pipeline health, candidate quality trends, and skill demand analytics for your job postings." />
-        <meta property="og:title" content="Recruiter Analytics | TalentSync" />
-        <meta property="og:description" content="View pipeline health, candidate quality trends, and skill demand analytics for your job postings." />
       </div>
     </section>
   )
 }
-// Accessibility check handled: aria-label
