@@ -79,7 +79,7 @@
     margin: 0 auto;
     padding: 0 clamp(20px, 5vw, 80px);
   }
-  
+
   /* Dashboard UX tokens */
   .stack-base { @apply space-y-4; }
   .stack-list { @apply space-y-4; }
@@ -382,6 +382,10 @@
     scroll-behavior: auto; /* Lenis handles this */
   }
 
+  html.custom-cursor-enabled {
+    cursor: none;
+  }
+
   body { overflow-x: hidden; }
 
   ::selection {
@@ -401,27 +405,36 @@
 
   /* ── CURSOR ── */
   .cursor-dot {
-    width: 8px; height: 8px;
+    width: 8px;
+    height: 8px;
     background: #FFE135;
     border: 2px solid #0A0A0A;
     position: fixed;
     pointer-events: none;
     z-index: 99999;
     transform: translate(-50%, -50%);
+    opacity: 1;
+    left: 0;
+    top: 0;
   }
 
   .cursor-ring {
-    width: 36px; height: 36px;
+    width: 36px;
+    height: 36px;
     border: 2px solid #FFE135;
     position: fixed;
     pointer-events: none;
     z-index: 99998;
     transform: translate(-50%, -50%);
     transition: width 0.2s, height 0.2s, border-color 0.2s;
+    opacity: 1;
+    left: 0;
+    top: 0;
   }
 
   .cursor-ring.expanded {
-    width: 56px; height: 56px;
+    width: 56px;
+    height: 56px;
     border-color: #00F5D4;
     mix-blend-mode: difference;
   }

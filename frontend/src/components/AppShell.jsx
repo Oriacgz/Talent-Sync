@@ -10,36 +10,46 @@ export default function AppShell({ children }) {
     const dot = document.querySelector('.cursor-dot');
     const ring = document.querySelector('.cursor-ring');
 
-    if (!dot || !ring) return;
+    if (!dot || !ring) {
+      console.warn('Cursor elements not found');
+      return;
+    }
 
+    // Hide on touch devices
     if ('ontouchstart' in window || navigator.maxTouchPoints > 0) {
       dot.style.display = 'none';
       ring.style.display = 'none';
       return;
     }
 
+    // Make visible immediately
+    dot.style.opacity = '1';
+    ring.style.opacity = '1';
+    dot.style.position = 'fixed';
+    ring.style.position = 'fixed';
+    dot.style.pointerEvents = 'none';
+    ring.style.pointerEvents = 'none';
+    dot.style.zIndex = '99999';
+    ring.style.zIndex = '99998';
+
     let rx, ry;
     let ctx = gsap.context(() => {
-      gsap.set([dot, ring], { opacity: 0 });
-      rx = gsap.quickTo(ring, 'x', { duration: 0.25, ease: 'power3' });
-      ry = gsap.quickTo(ring, 'y', { duration: 0.25, ease: 'power3' });
+      rx = gsap.quickTo(dot, 'x', { duration: 0.1, ease: 'power3' });
+      ry = gsap.quickTo(dot, 'y', { duration: 0.1, ease: 'power3' });
     });
 
-    let isFirstMove = true;
-
     const onMouseMove = (e) => {
-      if (isFirstMove) {
-        let initCtx = gsap.context(() => {
-          gsap.set([dot, ring], { x: e.clientX, y: e.clientY });
-          gsap.to([dot, ring], { opacity: 1, duration: 0.3 });
-        });
-        ctx.add(() => initCtx.revert()); // store to be reverted
-        isFirstMove = false;
-      } else {
-        gsap.set(dot, { x: e.clientX, y: e.clientY });
-      }
+      gsap.set(dot, { x: e.clientX, y: e.clientY });
       if (rx) rx(e.clientX);
       if (ry) ry(e.clientY);
+
+      // Ring follows with slight delay
+      gsap.to(ring, {
+        x: e.clientX,
+        y: e.clientY,
+        duration: 0.25,
+        overwrite: 'auto',
+      });
     };
 
     window.addEventListener('mousemove', onMouseMove);

@@ -11,6 +11,23 @@ export const jobService = {
     return res.data
   },
 
+  // Backward-compatible alias for screens still calling getAllJobs().
+  getAllJobs: async (filters = {}) => {
+    const params = new URLSearchParams()
+
+    Object.entries(filters).forEach(([key, val]) => {
+      if (val == null || val === '') return
+      if (Array.isArray(val)) {
+        val.forEach((v) => params.append(key, v))
+      } else {
+        params.set(key, val)
+      }
+    })
+
+    const res = await apiClient.get('/api/jobs', { params })
+    return res.data
+  },
+
   getJobs: async (filters = {}) => {
     const params = new URLSearchParams()
 

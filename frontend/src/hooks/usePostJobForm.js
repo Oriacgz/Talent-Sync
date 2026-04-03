@@ -1,5 +1,5 @@
 import { useState, useCallback } from 'react'
-import { jobService } from '../../services/jobService'
+import { jobService } from '../../src/services/jobService'
 
 const INITIAL_FORM = {
   title: '',
