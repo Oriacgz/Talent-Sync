@@ -95,7 +95,15 @@ export function useProfileForm(toast) {
           ? data.socialLinks
           : ['']
       )
-      setResume(data.resume || null)
+      const rawResume = data.resume || null
+      let parsedResume = null
+      if (typeof rawResume === 'string') {
+        parsedResume = { url: rawResume, name: rawResume.split('/').pop() || 'Resume.pdf', size: 0 }
+      } else if (rawResume && typeof rawResume === 'object') {
+        parsedResume = rawResume
+      }
+      setResume(parsedResume)
+
       setResumePublic(data.resumePublic !== false)
       setCertificates(Array.isArray(data.certificates) ? data.certificates : [])
       setCertificatesPublic(data.certificatesPublic !== false)
@@ -230,7 +238,13 @@ export function useProfileForm(toast) {
       }
       showResult('certs', true, 'Certificate uploaded ✓')
     } catch (err) {
-      showResult('certs', false, err?.response?.data?.detail || err?.message)
+      const status = err?.response?.status
+      if (status === 404) {
+        // Endpoint doesn't exist, ignore or handle gracefully
+        showResult('certs', false, 'Feature coming soon.')
+      } else {
+        showResult('certs', false, err?.response?.data?.detail || err?.message)
+      }
     } finally {
       setSaving('certs', false)
     }
@@ -246,7 +260,12 @@ export function useProfileForm(toast) {
       setCertificates((prev) => prev.filter((c) => c.id !== certId))
       showResult('certs', true, 'Certificate removed.')
     } catch (err) {
-      showResult('certs', false, err?.response?.data?.detail || err?.message)
+      const status = err?.response?.status
+      if (status === 404) {
+        showResult('certs', false, 'Not found.')
+      } else {
+        showResult('certs', false, err?.response?.data?.detail || err?.message)
+      }
     } finally {
       setSaving('certs', false)
     }

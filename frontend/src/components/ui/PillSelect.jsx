@@ -35,13 +35,10 @@ export default function PillSelect({
             type="button"
             onClick={() => handleClick(val)}
             className={`
-              px-4 py-2 text-xs font-bold uppercase tracking-wider
-              border-2 border-ink rounded-[3px]
-              transition-all duration-120
-              select-none cursor-pointer
+              px-3 py-1.5 text-[12px] font-medium uppercase tracking-wider rounded-full transition-colors cursor-pointer select-none border border-(--border)
               ${selected
-                ? 'bg-yellow text-ink shadow-[3px_3px_0_var(--border)]'
-                : 'bg-paper text-ink hover:bg-muted'
+                ? 'bg-(--accent-yellow) text-[#09090B] border-(--border-strong)'
+                : 'bg-(--bg-subtle) text-(--text-secondary) hover:text-(--text-primary) hover:border-(--border-strong)'
               }
             `}
           >

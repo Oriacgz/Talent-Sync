@@ -11,6 +11,7 @@
   },
   "dependencies": {
     "@fontsource/caveat": "^5.2.8",
+    "@fontsource/inter": "^5.2.8",
     "@fontsource/space-grotesk": "^5.2.10",
     "@fontsource/space-mono": "^5.2.9",
     "@gsap/react": "^2.1.2",
@@ -24,10 +25,11 @@
     "lucide-react": "^1.7.0",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
+    "react-hot-toast": "^2.6.0",
     "react-intersection-observer": "^10.0.3",
     "react-is": "^19.2.4",
     "react-router-dom": "^7.13.1",
-    "recharts": "^3.8.0",
+    "recharts": "^3.8.1",
     "tailwindcss": "^4.2.1",
     "terser": "^5.46.1",
     "three": "^0.183.2"

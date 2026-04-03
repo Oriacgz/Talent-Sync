@@ -10,7 +10,7 @@ export default function RegisterPage() {
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
-  const [role, setRole] = useState(''); // 'student' | 'recruiter'
+  const [role, setRole] = useState('') // 'STUDENT' | 'RECRUITER'
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
   const navigate = useNavigate();
@@ -294,22 +294,22 @@ export default function RegisterPage() {
                     {/* Student Card */}
                     <motion.button
                       type="button"
-                      onClick={() => setRole('student')}
+                      onClick={() => setRole('STUDENT')}
                       whileHover={{ y: -2 }}
                       whileTap={{ scale: 0.97 }}
                       className={`p-4 border-[3px] text-left cursor-pointer transition-all ${
-                        role === 'student'
+                        role === 'STUDENT'
                           ? 'bg-yellow border-ink text-ink'
                           : 'bg-[#0e0e0e] border-paper text-paper hover:border-yellow'
                       }`}
                       style={{
-                        boxShadow: role === 'student' ? '4px 4px 0px #0A0A0A' : '4px 4px 0px #353534',
+                        boxShadow: role === 'STUDENT' ? '4px 4px 0px #0A0A0A' : '4px 4px 0px #353534',
                         borderRadius: 0
                       }}
                     >
                       <div className="text-2xl mb-2">🎓</div>
                       <div className="font-sans font-bold text-sm uppercase">Student</div>
-                      <div className={`font-mono text-[10px] mt-1 ${role === 'student' ? 'text-[#393000]' : 'text-[#979179]'}`}>
+                      <div className={`font-mono text-[10px] mt-1 ${role === 'STUDENT' ? 'text-[#393000]' : 'text-[#979179]'}`}>
                         Find opportunities
                       </div>
                     </motion.button>
@@ -317,7 +317,7 @@ export default function RegisterPage() {
                     {/* Recruiter Card */}
                     <motion.button
                       type="button"
-                      onClick={() => setRole('recruiter')}
+                      onClick={() => setRole('RECRUITER')}
                       whileHover={{ y: -2 }}
                       whileTap={{ scale: 0.97 }}
                       className={`p-4 border-[3px] text-left cursor-pointer transition-all ${
@@ -326,13 +326,13 @@ export default function RegisterPage() {
                           : 'bg-[#0e0e0e] border-paper text-paper hover:border-cyan'
                       }`}
                       style={{
-                        boxShadow: role === 'recruiter' ? '4px 4px 0px #0A0A0A' : '4px 4px 0px #353534',
+                        boxShadow: role === 'RECRUITER' ? '4px 4px 0px #0A0A0A' : '4px 4px 0px #353534',
                         borderRadius: 0
                       }}
                     >
                       <div className="text-2xl mb-2">💼</div>
                       <div className="font-sans font-bold text-sm uppercase">Recruiter</div>
-                      <div className={`font-mono text-[10px] mt-1 ${role === 'recruiter' ? 'text-[#00382f]' : 'text-[#979179]'}`}>
+                      <div className={`font-mono text-[10px] mt-1 ${role === 'RECRUITER' ? 'text-[#00382f]' : 'text-[#979179]'}`}>
                         Find talent
                       </div>
                     </motion.button>
