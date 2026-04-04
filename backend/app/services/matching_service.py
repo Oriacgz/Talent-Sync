@@ -18,6 +18,7 @@ async def get_top_matches(student_id: str, n: int = 10):
     prisma = get_prisma()
     return await prisma.matchscore.find_many(
         where={"studentId": student_id},
-        order={"hybridScore": "desc"},
+        order={"finalScore": "desc"},
         take=n,
+        include={"job": True},
     )

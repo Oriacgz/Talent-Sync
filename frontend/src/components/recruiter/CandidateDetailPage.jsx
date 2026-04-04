@@ -1,12 +1,6 @@
-/*
- * WHO WRITES THIS: Frontend developer
- * WHAT THIS DOES: Full detail for one candidate. Shows student skills/GPA/college.
- *                 MatchRing + SHAPChart explaining why this student matched.
- *                 Status update buttons: Reviewed / Shortlist / Select / Reject.
- * DEPENDS ON: matchService, applicationService, SHAPChart, MatchRing, StatusBadge
- */
 import { useEffect, useMemo, useState } from 'react'
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom'
+import { ArrowLeft } from 'lucide-react'
 import { applicationService } from '../../services/applicationService'
 import { matchService } from '../../services/matchService'
 import { buildMatchNarrative, topShapReasons } from '../../utils/formatters'
@@ -14,9 +8,15 @@ import EmptyState from '../shared/EmptyState'
 import MatchRing from '../shared/MatchRing'
 import SHAPChart from '../shared/SHAPChart'
 import { SkeletonCard } from '../shared/Skeletons'
-import SkillTag from '../shared/SkillTag'
 import StatusBadge from '../shared/StatusBadge'
 import { useToast } from '../shared/useToast'
+
+function toFriendlyMessage(error, fallback) {
+  const status = error?.response?.status
+  if (status === 401 || status === 403) return 'Your session has expired. Please sign in again.'
+  if (status === 429) return 'Too many requests right now. Please retry in a moment.'
+  return fallback
+}
 
 const STATUS_ACTIONS = [
   { label: 'Mark Reviewed', value: 'REVIEWED' },
@@ -51,9 +51,7 @@ export default function CandidateDetailPage() {
         return
       }
       const data = await matchService.getJobCandidates(jobId)
-      if (!active) {
-        return
-      }
+      if (!active) return
       const all = Array.isArray(data) ? data : []
       const nextCandidate = all.find((item) => String(item.id) === String(id)) || null
       setCandidate(nextCandidate)
@@ -64,19 +62,17 @@ export default function CandidateDetailPage() {
     load().catch((error) => {
       if (active) {
         setCandidate(null)
-        setLoadError(error?.message || 'Unable to load candidate detail right now.')
+        setLoadError(toFriendlyMessage(error, 'Unable to load candidate detail right now.'))
         setLoading(false)
       }
     })
 
-    return () => {
-      active = false
-    }
+    return () => { active = false }
   }, [id, jobId, reloadTick])
 
   if (loading) {
     return (
-      <section className="grid gap-4 xl:grid-cols-[minmax(0,2fr)_minmax(280px,1fr)]">
+      <section className="mx-auto grid w-full max-w-275 gap-6 pb-12 xl:grid-cols-[minmax(0,2fr)_minmax(320px,1fr)]">
         <SkeletonCard className="min-h-75" />
         <SkeletonCard className="min-h-75" />
       </section>
@@ -84,9 +80,7 @@ export default function CandidateDetailPage() {
   }
 
   const onUpdateStatus = async (nextStatus) => {
-    if (!candidate || statusSaving || nextStatus === status) {
-      return
-    }
+    if (!candidate || statusSaving || nextStatus === status) return
 
     if (!candidate.applicationId) {
       toast.error('Unable to update candidate status: missing application ID.')
@@ -110,7 +104,7 @@ export default function CandidateDetailPage() {
 
   if (!candidate) {
     return (
-      <section className="space-y-4">
+      <section className="w-full max-w-none pb-12">
         <EmptyState
           title="Candidate not found"
           subtitle={loadError || 'The candidate record may have changed.'}
@@ -125,69 +119,100 @@ export default function CandidateDetailPage() {
   }
 
   return (
-    <section className="grid gap-4 xl:grid-cols-[minmax(0,2fr)_minmax(280px,1fr)]">
-      <article className="stack-base card-base">
-        <header>
-          <h1 className="wrap-break-word text-2xl font-bold">{candidate.fullName}</h1>
-          <p className="wrap-break-word text-secondary">{candidate.college} · GPA {candidate.gpa}</p>
-        </header>
+    <section className="flex flex-col gap-6 pb-12 w-full max-w-none">
+      <header className="flex items-center gap-4">
+        <button
+          onClick={() => navigate('/recruiter/candidates')}
+          className="flex h-9 w-9 items-center justify-center rounded-md border border-(--border) bg-(--bg-base) text-(--text-secondary) transition-colors hover:bg-(--bg-subtle) hover:text-(--text-primary)"
+        >
+          <ArrowLeft size={18} />
+        </button>
+        <div>
+          <h1 className="font-heading text-[22px] font-bold text-(--text-primary)">Candidate Detail</h1>
+        </div>
+      </header>
 
-        <div className="flex flex-wrap gap-2">
-          {(candidate.skills || []).map((skill) => (
-            <SkillTag key={skill} skill={skill} />
-          ))}
+      <div className="grid gap-6 xl:grid-cols-[minmax(0,2fr)_minmax(340px,1fr)]">
+        {/* Left Column: Candidate Info & Actions */}
+        <div className="flex flex-col gap-6">
+          <article className="rounded-lg border border-(--border) bg-(--bg-card) p-6">
+            <header className="mb-6">
+              <h2 className="font-heading text-[24px] font-bold text-(--text-primary)">{candidate.fullName}</h2>
+              <p className="font-sans text-[14px] text-(--text-secondary) mt-1">
+                {candidate.college} <span className="opacity-50 mx-1.5">•</span> GPA {candidate.gpa}
+              </p>
+            </header>
+
+            <div className="flex flex-wrap gap-2 mb-6">
+              {(candidate.skills || []).map((skill) => (
+                <span key={skill} className="rounded-sm border border-(--border) bg-(--bg-base) px-2.5 py-1 text-[12px] font-medium text-(--text-primary)">
+                  {skill}
+                </span>
+              ))}
+            </div>
+
+            <p className="font-sans text-[14px] leading-relaxed text-(--text-secondary) mb-8">
+              {buildMatchNarrative(candidate)}
+            </p>
+
+            <div className="mt-6 rounded-md bg-(--bg-subtle) p-4">
+               <p className="font-sans text-[11px] font-semibold uppercase tracking-widest text-(--text-muted) mb-3">Top Reasons For Match</p>
+               <div className="flex flex-col gap-1.5">
+                {topReasons.length ? (
+                  topReasons.map((reason) => (
+                    <p key={reason.feature} className="font-sans text-[13px] text-(--text-primary)">
+                      <span className="font-semibold">{reason.feature}</span>: {reason.value >= 0 ? '+' : ''}{reason.value.toFixed(2)}
+                    </p>
+                  ))
+                ) : (
+                  <p className="font-sans text-[13px] text-(--text-muted)">No explainability signals available.</p>
+                )}
+               </div>
+            </div>
+          </article>
+
+          <article className="rounded-lg border border-(--border) bg-(--bg-card) p-6">
+            <p className="font-sans text-[11px] font-semibold uppercase tracking-widest text-(--text-muted) mb-4">Hiring Funnel Actions</p>
+            <div className="mb-6">
+              <StatusBadge status={status} />
+            </div>
+            <div className="flex flex-wrap gap-3">
+              {STATUS_ACTIONS.map((action) => (
+                <button
+                  key={action.value}
+                  type="button"
+                  disabled={statusSaving || action.value === status}
+                  onClick={() => onUpdateStatus(action.value)}
+                  className={`rounded-md px-4 py-2 font-sans text-[13px] font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-50
+                    ${action.value === status 
+                      ? 'border border-(--border-strong) bg-(--bg-subtle) text-(--text-secondary)'
+                      : 'border border-(--border-strong) bg-(--bg-base) text-(--text-primary) hover:bg-(--text-primary) hover:text-(--bg-base)'
+                    }
+                  `}
+                >
+                  {action.label}
+                </button>
+              ))}
+            </div>
+          </article>
         </div>
 
-        <p className="text-sm text-ink/85">{buildMatchNarrative(candidate)}</p>
-
-        <div className="surface-info text-xs text-ink/75">
-          <p className="mb-2 text-ink/90">Top reasons this candidate matches</p>
-          <div className="stack-dense">
-            {topReasons.length ? (
-              topReasons.map((reason) => (
-                <p key={reason.feature}>{reason.feature}: {reason.value >= 0 ? '+' : ''}{reason.value.toFixed(2)}</p>
-              ))
-            ) : (
-              <p>No explainability signals available.</p>
-            )}
+        {/* Right Column: SHAP Chart & Score */}
+        <aside className="max-h-min rounded-lg border border-(--border) bg-(--bg-card) p-6">
+          <p className="font-sans text-[11px] font-semibold uppercase tracking-widest text-(--text-muted) mb-6 text-center">Compatibility Score</p>
+          <div className="flex items-center justify-center mb-8">
+            <MatchRing score={candidate.score || 0} size={120} strokeWidth={8} />
           </div>
-        </div>
+          <p className="font-sans text-[11px] font-semibold uppercase tracking-widest text-(--text-muted) mb-4">Match Explainability</p>
+          <SHAPChart shapValues={candidate.shapValues} totalScore={candidate.score || 0} />
+        </aside>
+      </div>
 
-        <div className="surface-muted">
-          <p className="mb-2 text-xs uppercase tracking-wider text-ink/70">Hiring Funnel Actions</p>
-          <div className="mb-3">
-            <StatusBadge status={status} />
-          </div>
-          <div className="grid gap-2 sm:flex sm:flex-wrap">
-            {STATUS_ACTIONS.map((action) => (
-              <button
-                key={action.value}
-                type="button"
-                disabled={statusSaving || action.value === status}
-                onClick={() => onUpdateStatus(action.value)}
-                className="btn-secondary btn-feedback disabled:cursor-not-allowed"
-              >
-                {action.label}
-              </button>
-            ))}
-          </div>
-        </div>
-      </article>
-
-      <aside className="stack-base card-base">
-        <div className="flex items-center justify-center">
-          <MatchRing score={candidate.score || 0} size={96} strokeWidth={8} />
-        </div>
-        <SHAPChart shapValues={candidate.shapValues} totalScore={candidate.score || 0} />
-      </aside>
-      {/* SEO Metadata heuristic fix */}
+      {/* SEO */}
       <div className="hidden" aria-hidden="true">
         <title>Candidate Details | TalentSync Recruiter</title>
         <meta name="description" content="Detailed candidate profile with AI match explanation and hiring funnel actions." />
-        <meta property="og:title" content="Candidate Details | TalentSync Recruiter" />
-        <meta property="og:description" content="Detailed candidate profile with AI match explanation and hiring funnel actions." />
       </div>
     </section>
   )
 }
-// Accessibility check handled: aria-label

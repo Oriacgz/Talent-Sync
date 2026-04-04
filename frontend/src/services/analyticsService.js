@@ -4,26 +4,15 @@
  * DEPENDS ON: api.js
  */
 import apiClient from "./api";
-import { resolveData } from "./mockRuntime";
 
 export const analyticsService = {
-  getPlatformStats: async () => resolveData({
-    apiCall: async () => {
-      const response = await apiClient.get("/analytics/platform");
-      return response?.data || {};
-    },
-    mockFile: "analytics.js",
-    mockExport: "platformStats",
-    fallbackValue: {},
-  }),
+  getPlatformStats: async () => {
+    const response = await apiClient.get("/analytics/platform");
+    return response?.data || {};
+  },
 
-  getRecruiterAnalytics: async () => resolveData({
-    apiCall: async () => {
-      const response = await apiClient.get("/analytics/recruiter/me");
-      return response?.data || {};
-    },
-    mockFile: "analytics.js",
-    mockExport: "recruiterAnalytics",
-    fallbackValue: {},
-  }),
+  getRecruiterAnalytics: async () => {
+    const response = await apiClient.get("/analytics/recruiter/me");
+    return response?.data || {};
+  },
 };

@@ -5,58 +5,24 @@
  * DEPENDS ON: api.js
  */
 import apiClient from "./api";
-import { getMockExport, resolveData } from "./mockRuntime";
 
 export const matchService = {
-  getMyMatches: async (limit = 10) => resolveData({
-    apiCall: async () => {
-      const response = await apiClient.get("/matches/me", { params: { limit } });
-      return response?.data || [];
-    },
-    mockFile: "matches.js",
-    mockExport: "matches",
-    fallbackValue: [],
-  }),
+  getMyMatches: async (limit = 10) => {
+    const response = await apiClient.get("/matches/me", { params: { limit } });
+    return Array.isArray(response?.data) ? response.data : [];
+  },
 
   getMatchDetail: async (matchId) => {
     const id = String(matchId);
-    const apiResult = await resolveData({
-      apiCall: async () => {
-        const response = await apiClient.get(`/matches/${id}/detail`);
-        return response?.data || null;
-      },
-      mockFile: "matches.js",
-      mockExport: "matches",
-      fallbackValue: [],
-    });
-
-    if (Array.isArray(apiResult)) {
-      return apiResult.find((match) => String(match.id) === id) || null;
-    }
-    return apiResult;
+    if (!id) return null;
+    const response = await apiClient.get(`/matches/${id}/detail`);
+    return response?.data || null;
   },
 
   getJobCandidates: async (jobId) => {
     const id = String(jobId || "");
-    const apiResult = await resolveData({
-      apiCall: async () => {
-        const response = await apiClient.get(`/matches/job/${id}/candidates`);
-        return response?.data || [];
-      },
-      mockFile: "students.js",
-      mockExport: "candidates",
-      fallbackValue: [],
-    });
-
-    if (!id) {
-      return apiResult;
-    }
-
-    if (Array.isArray(apiResult)) {
-      return apiResult.filter((candidate) => !candidate.jobId || String(candidate.jobId) === id);
-    }
-
-    const candidates = (await getMockExport("students.js", "candidates")) || [];
-    return candidates.filter((candidate) => !candidate.jobId || String(candidate.jobId) === id);
+    const target = id || "all";
+    const response = await apiClient.get(`/matches/job/${target}/candidates`);
+    return Array.isArray(response?.data) ? response.data : [];
   },
 };

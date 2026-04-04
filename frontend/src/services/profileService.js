@@ -24,4 +24,18 @@ export const profileService = {
     });
     return response?.data;
   },
+
+  uploadCertificate: async (file) => {
+    const body = new FormData();
+    body.append("file", file);
+    const response = await apiClient.post("/students/me/certificates", body, {
+      headers: { "Content-Type": "multipart/form-data" },
+    });
+    return response?.data;
+  },
+
+  deleteCertificate: async (certificateId) => {
+    const response = await apiClient.delete(`/students/me/certificates/${certificateId}`);
+    return response?.data;
+  },
 };

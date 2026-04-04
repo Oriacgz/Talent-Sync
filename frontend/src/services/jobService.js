@@ -25,7 +25,10 @@ export const jobService = {
     })
 
     const res = await apiClient.get('/api/jobs', { params })
-    return res.data
+    const payload = res.data
+    if (Array.isArray(payload)) return payload
+    if (Array.isArray(payload?.items)) return payload.items
+    return []
   },
 
   getJobs: async (filters = {}) => {

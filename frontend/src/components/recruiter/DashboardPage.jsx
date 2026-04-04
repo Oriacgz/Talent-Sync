@@ -1,29 +1,33 @@
-/*
- * WHO WRITES THIS: Frontend developer
- * WHAT THIS DOES: Recruiter's main page. Lists their job postings.
- *                 Each job shows candidate count and "View Candidates" link.
- *                 "Post New Job" button links to PostJobPage.
- * DEPENDS ON: jobService, react-router-dom
- */
 import { memo, useCallback, useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { Plus } from 'lucide-react'
+import { motion } from 'framer-motion'
 import { analyticsService } from '../../services/analyticsService'
 import { jobService } from '../../services/jobService'
 import { getRecruiterFunnel } from '../../utils/formatters'
 import EmptyState from '../shared/EmptyState'
 import { SkeletonCard } from '../shared/Skeletons'
 
+function toFriendlyMessage(error, fallback) {
+  const status = error?.response?.status
+  if (status === 401 || status === 403) return 'Your session has expired. Please sign in again.'
+  if (status === 429) return 'Too many requests right now. Please retry in a moment.'
+  return fallback
+}
+
 const JobListItem = memo(function JobListItem({ job, onViewCandidates }) {
   return (
-    <article className="list-item card-hover">
+    <article className="group flex flex-col sm:flex-row sm:items-center justify-between gap-4 rounded-lg border border-(--border) bg-(--bg-card) p-4 transition-colors hover:border-(--border-strong) hover:bg-(--bg-subtle)">
       <div className="min-w-0 flex-1">
-        <p className="truncate text-base font-semibold">{job.title}</p>
-        <p className="truncate text-secondary">{job.company} · {job.location || 'Remote'}</p>
+        <p className="truncate font-heading text-[16px] font-bold text-(--text-primary)">{job.title}</p>
+        <p className="truncate font-sans text-[13px] text-(--text-secondary)">
+          {job.company} <span className="mx-1.5 opacity-50">•</span> {job.location || 'Remote'}
+        </p>
       </div>
       <button
         type="button"
         onClick={() => onViewCandidates(job.id)}
-        className="btn-secondary btn-feedback w-full sm:w-auto"
+        className="rounded-md border border-(--border-strong) bg-(--bg-base) px-4 py-2 font-sans text-[13px] font-medium text-(--text-primary) transition-colors hover:bg-(--text-primary) hover:text-(--bg-base)"
       >
         View Candidates ({job.candidateCount || 0})
       </button>
@@ -38,6 +42,7 @@ export default function RecruiterDashboard() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [reloadTick, setReloadTick] = useState(0)
+
   const onViewCandidates = useCallback((jobId) => {
     const id = String(jobId || '').trim()
     navigate(id ? `/recruiter/candidates?jobId=${encodeURIComponent(id)}` : '/recruiter/candidates')
@@ -52,52 +57,53 @@ export default function RecruiterDashboard() {
         jobService.getAllJobs(),
         analyticsService.getRecruiterAnalytics(),
       ])
-      if (!active) {
-        return
-      }
+      if (!active) return
+
       const jobData = jobResult.status === 'fulfilled' ? jobResult.value : []
       const analyticsData = analyticsResult.status === 'fulfilled' ? analyticsResult.value : {}
       setJobs(Array.isArray(jobData) ? jobData : [])
       setFunnel(getRecruiterFunnel(analyticsData?.totals || {}))
+      
       if (jobResult.status === 'rejected') {
-        setError(jobResult.reason?.message || 'Some recruiter data could not be loaded.')
+        setError(toFriendlyMessage(jobResult.reason, 'Some recruiter data could not be loaded.'))
       }
       setLoading(false)
     }
 
     load().catch((loadError) => {
-      if (!active) {
-        return
-      }
+      if (!active) return
       setJobs([])
       setFunnel([])
-      setError(loadError?.message || 'Unable to load jobs right now.')
+      setError(toFriendlyMessage(loadError, 'Unable to load jobs right now.'))
       setLoading(false)
     })
 
-    return () => {
-      active = false
-    }
+    return () => { active = false }
   }, [reloadTick])
 
   return (
-    <section className="stack-base">
+    <motion.div
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.4, ease: 'easeOut' }}
+      className="flex flex-col gap-8 pb-12 w-full max-w-none"
+    >
       <header className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-primary-hero">Recruiter Dashboard</h1>
-          <p className="text-secondary">Monitor active roles and candidate pipeline.</p>
+          <h1 className="font-heading text-[26px] font-bold text-(--text-primary)">Recruiter Dashboard</h1>
+          <p className="font-sans text-[14px] text-(--text-secondary)">Monitor active roles and candidate pipeline.</p>
         </div>
         <button
           type="button"
           onClick={() => navigate('/recruiter/post-job')}
-          className="btn-secondary btn-feedback"
+          className="flex items-center gap-2 rounded-md bg-(--text-primary) px-4 py-2 font-sans text-[13px] font-medium text-(--bg-base) transition-opacity hover:opacity-90"
         >
-          Post New Job
+          <Plus size={16} /> Post New Job
         </button>
       </header>
 
       {loading ? (
-        <div className="stack-list">
+        <div className="flex flex-col gap-4">
           <SkeletonCard />
           <SkeletonCard />
         </div>
@@ -119,40 +125,48 @@ export default function RecruiterDashboard() {
           subtitle="Create your first job posting to start receiving candidates."
           actionLabel="Post First Job"
           onAction={() => navigate('/recruiter/post-job')}
-          actionClassName="btn-secondary"
           icon="*"
         />
       ) : null}
 
-      {!loading && !error && funnel.length ? (
-        <article className="card-base stack-dense">
-          <p className="text-xs uppercase tracking-wider text-ink/70">Hiring Funnel</p>
-          <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+      {!loading && !error && funnel.length > 0 ? (
+        <article className="flex flex-col gap-3">
+          <p className="font-sans text-[11px] font-semibold uppercase tracking-widest text-(--text-muted)">Hiring Funnel</p>
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
             {funnel.map((stage) => (
-              <div key={stage.key} className="brutal-stat border-l-(--cyan) bg-(--bg)">
-                <p className="text-[10px] uppercase tracking-[0.15em] text-ink/60">{stage.label}</p>
-                <p className="text-xl font-semibold text-ink">{stage.count}</p>
+              <div
+                key={stage.key}
+                className="flex flex-col rounded-lg bg-(--bg-card) p-4 transition-colors hover:bg-(--bg-subtle) border border-(--border)"
+                style={{ borderTop: '3px solid var(--accent-cyan)' }}
+              >
+                <p className="font-sans text-[11px] font-semibold uppercase tracking-[0.15em] text-(--text-muted)">
+                  {stage.label}
+                </p>
+                <p className="mt-2 font-mono text-[32px] font-bold leading-none text-(--text-primary)">
+                  {stage.count}
+                </p>
               </div>
             ))}
           </div>
         </article>
       ) : null}
 
-      {!loading && !error ? (
-        <div className="stack-list">
-          {jobs.map((job) => (
-            <JobListItem key={job.id} job={job} onViewCandidates={onViewCandidates} />
-          ))}
+      {!loading && !error && jobs.length > 0 ? (
+        <div className="flex flex-col gap-4">
+          <p className="font-sans text-[11px] font-semibold uppercase tracking-widest text-(--text-muted)">My Postings</p>
+          <div className="flex flex-col gap-3">
+            {jobs.map((job) => (
+              <JobListItem key={job.id} job={job} onViewCandidates={onViewCandidates} />
+            ))}
+          </div>
         </div>
       ) : null}
-      {/* SEO Metadata heuristic fix */}
+
+      {/* SEO */}
       <div className="hidden" aria-hidden="true">
         <title>Recruiter Dashboard | TalentSync</title>
         <meta name="description" content="Manage your job postings and monitor the hiring funnel status for all active roles." />
-        <meta property="og:title" content="Recruiter Dashboard | TalentSync" />
-        <meta property="og:description" content="Manage your job postings and monitor the hiring funnel status for all active roles." />
       </div>
-    </section>
+    </motion.div>
   )
 }
-// Accessibility check handled: aria-label

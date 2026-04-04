@@ -3,46 +3,69 @@
 @import "@fontsource/space-mono/400.css";
 @import "@fontsource/space-mono/700.css";
 @import "@fontsource/caveat/400.css";
+@import "@fontsource/inter/400.css";
+@import "@fontsource/inter/500.css";
+@import "@fontsource/inter/600.css";
+@import "@fontsource/inter/700.css";
 @import "tailwindcss";
 
 :root {
+  /* Layout & Spacing */
   --space-8: 8px;
-  --yellow: #ffe135;
-  --cyan: #00b8d9;
-  --cyan-soft: #dff7fc;
-  --pink: #ff5b8a;
-  --green: #18c964;
-  --border: #0a0a0a;
-  --bg: #f7f5ef;
-  --bg-soft: #eeeadf;
-  --text: #121212;
-  --text-muted: #404040;
   --space-16: 16px;
   --space-24: 24px;
   --space-32: 32px;
-  --shadow-offset-sm: 4px 4px 0 var(--border);
-  --shadow-offset-md: 6px 6px 0 var(--border);
+
+  /* Design Tokens - Light (Default) */
+  --bg-base: #FAFAFA;
+  --bg-card: #FFFFFF;
+  --bg-subtle: #F4F4F5;
+  --border: #E4E4E7;
+  --border-strong: #D4D4D8;
+  --text-primary: #09090B;
+  --text-secondary: #52525B;
+  --text-muted: #A1A1AA;
+  --text-on-accent: #09090B;
+  
+  /* Accents */
+  --accent-yellow: #FFE135;
+  --accent-cyan: #00B8D9;
+  --success: #22C55E;
+  --warning: #F59E0B;
+  --danger: #EF4444;
+  --purple: #A855F7;
 }
 
-/* ── THEME (migrated from tailwind.config.js) ── */
+.dark {
+  --bg-base: #09090B;
+  --bg-card: #18181B;
+  --bg-subtle: #27272A;
+  --border: #3F3F46;
+  --border-strong: #52525B;
+  --text-primary: #FAFAFA;
+  --text-secondary: #A1A1AA;
+  --text-muted: #71717A;
+  --text-on-accent: #09090B;
+}
+
 @theme {
-  --font-sans: "Space Grotesk", sans-serif;
+  --font-sans: "Inter", sans-serif;
+  --font-heading: "Space Grotesk", sans-serif;
   --font-mono: "Space Mono", monospace;
   --font-hand: "Caveat", cursive;
 
-  --color-yellow: #FFE135;
-  --color-cyan: #00B8D9;
-  --color-pink: #FF2D78;
-  --color-green: #18C964;
-  --color-ink: #0A0A0A;
-  --color-paper: #FAF9F6;
-  --color-muted: #F0EDE8;
+  --color-yellow: var(--accent-yellow);
+  --color-cyan: var(--accent-cyan);
+  --color-pink: var(--danger);
+  --color-green: var(--success);
+  --color-ink: var(--text-primary);
+  --color-paper: var(--bg-card);
+  --color-muted: var(--text-muted);
 
-  --shadow-brutal: 4px 4px 0px #0A0A0A;
-  --shadow-brutal-md: 6px 6px 0px #0A0A0A;
-  --shadow-brutal-lg: 10px 10px 0px #0A0A0A;
-  --shadow-brutal-y: 6px 6px 0px #FFE135;
-  --shadow-brutal-inv: 4px 4px 0px #FAF9F6;
+  --shadow-brutal: 4px 4px 0px var(--text-primary);
+  --shadow-brutal-md: 6px 6px 0px var(--text-primary);
+  --shadow-brutal-lg: 10px 10px 0px var(--text-primary);
+  --shadow-brutal-y: 6px 6px 0px var(--accent-yellow);
 }
 
 @layer components {
@@ -78,6 +101,13 @@
     max-width: 1280px;
     margin: 0 auto;
     padding: 0 clamp(20px, 5vw, 80px);
+  }
+
+  /* Page content wrapper */
+  .page-content {
+    width: 100%;
+    padding: 32px;
+    padding-top: 28px;
   }
 
   /* Dashboard UX tokens */
@@ -374,6 +404,12 @@
 @layer base {
   * { box-sizing: border-box; margin: 0; padding: 0; }
 
+  *, *::before, *::after {
+    transition: background-color 150ms ease, 
+                border-color 150ms ease, 
+                color 150ms ease;
+  }
+
   html {
     font-family: "Space Grotesk", sans-serif;
     background: var(--bg);
@@ -489,7 +525,7 @@
     bottom: -4px; left: 0;
     height: 8px;
     width: 0%;
-    background: #FFE135;
+    background: var(--accent-yellow);
     z-index: -1;
     transition: width 0.6s cubic-bezier(0.23,1,0.32,1);
   }

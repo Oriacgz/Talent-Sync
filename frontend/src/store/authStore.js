@@ -12,7 +12,8 @@ const DEV_ROLE = String(import.meta.env.VITE_DEV_AUTH_ROLE || "student").toLower
   : "student";
 
 const DEV_USER = {
-  name: "Demo User",
+  name: DEV_ROLE === "recruiter" ? "Recruiter Account" : "Student Account",
+  email: DEV_ROLE === "recruiter" ? "recruiter@local.dev" : "student@local.dev",
   role: DEV_ROLE,
 };
 

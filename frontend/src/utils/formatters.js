@@ -41,12 +41,12 @@ export const truncateText = (text, max = 140) => {
 export const getMatchColor = (score) => {
 	const safeScore = Number.isFinite(Number(score)) ? Number(score) : 0;
 	if (safeScore >= 0.75) {
-		return "#00F5D4";
+		return "#00B8D9"; // Accent Cyan
 	}
 	if (safeScore >= 0.55) {
-		return "#FFE135";
+		return "#FFE135"; // Accent Yellow
 	}
-	return "#FF2D78";
+	return "#EF4444"; // Danger Red
 };
 
 export const topShapReasons = (shapValues, count = 2) => {

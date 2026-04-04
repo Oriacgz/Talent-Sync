@@ -4,38 +4,20 @@
  * DEPENDS ON: api.js
  */
 import apiClient from "./api";
-import { resolveData } from "./mockRuntime";
 
 export const applicationService = {
-  apply: async (jobId) => resolveData({
-    apiCall: async () => {
-      const response = await apiClient.post("/applications", { job_id: jobId });
-      return response?.data || { job_id: jobId, submitted: true };
-    },
-    mockFile: "matches.js",
-    mockExport: "applications",
-    fallbackValue: { job_id: jobId, submitted: true },
-  }),
+  apply: async (jobId) => {
+    const response = await apiClient.post("/applications", { job_id: jobId });
+    return response?.data;
+  },
 
-  getMyApplications: async () => resolveData({
-    apiCall: async () => {
-      const response = await apiClient.get("/applications/me");
-      return response?.data || [];
-    },
-    mockFile: "matches.js",
-    mockExport: "applications",
-    fallbackValue: [],
-  }),
+  getMyApplications: async () => {
+    const response = await apiClient.get("/applications/me");
+    return Array.isArray(response?.data) ? response.data : [];
+  },
 
   updateStatus: async (id, status) => {
-    return resolveData({
-      apiCall: async () => {
-        const response = await apiClient.patch(`/applications/${id}/status`, { status });
-        return response?.data || { id, status };
-      },
-      mockFile: "matches.js",
-      mockExport: "applications",
-      fallbackValue: { id, status },
-    });
+    const response = await apiClient.patch(`/applications/${id}/status`, { status });
+    return response?.data;
   },
 };

@@ -8,9 +8,12 @@ export const useUIStore = create((set) => ({
   sidebarOpen: true,
   mobileSidebarOpen: false,
   globalLoading: false,
+  aiPanelOpen: false,
   toggleSidebar: () => set((state) => ({ sidebarOpen: !state.sidebarOpen })),
   toggleMobileSidebar: () => set((state) => ({ mobileSidebarOpen: !state.mobileSidebarOpen })),
   closeMobileSidebar: () => set({ mobileSidebarOpen: false }),
-  resetUIState: () => set({ sidebarOpen: true, mobileSidebarOpen: false, globalLoading: false }),
+  toggleAIPanel: () => set((state) => ({ aiPanelOpen: !state.aiPanelOpen })),
+  setAIPanelOpen: (aiPanelOpen) => set({ aiPanelOpen }),
+  resetUIState: () => set({ sidebarOpen: true, mobileSidebarOpen: false, aiPanelOpen: false, globalLoading: false }),
   setGlobalLoading: (globalLoading) => set({ globalLoading: Boolean(globalLoading) }),
 }));

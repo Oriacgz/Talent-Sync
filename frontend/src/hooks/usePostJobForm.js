@@ -1,5 +1,5 @@
 import { useState, useCallback } from 'react'
-import { jobService } from '../../src/services/jobService'
+import { jobService } from '../services/jobService'
 
 const INITIAL_FORM = {
   title: '',
@@ -132,9 +132,14 @@ export function usePostJobForm() {
       setFormData({ ...INITIAL_FORM })
       return result
     } catch (err) {
-      const apiMessage =
-        err?.response?.data?.detail || 'Failed to post job. Please try again.'
-      throw new Error(apiMessage)
+      const status = err?.response?.status
+      if (status === 400) {
+        throw new Error('Please review the job details and try again.')
+      }
+      if (status === 401 || status === 403) {
+        throw new Error('Your session has expired. Please sign in again.')
+      }
+      throw new Error('Unable to post this job right now. Please try again shortly.')
     } finally {
       setIsLoading(false)
     }

@@ -10,7 +10,7 @@ export default function RegisterPage() {
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
-  const [role, setRole] = useState(''); // 'student' | 'recruiter'
+  const [role, setRole] = useState('') // 'STUDENT' | 'RECRUITER'
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
   const navigate = useNavigate();
@@ -33,7 +33,14 @@ export default function RegisterPage() {
       await authService.register(name, email, password, role);
       navigate('/login', { state: { message: 'Registration successful! Please sign in.' } });
     } catch (err) {
-      setError(err.response?.data?.detail || 'Failed to create account. Please try again.');
+      const status = err?.response?.status;
+      if (status === 409) {
+        setError('An account with this email already exists.');
+      } else if (status === 400) {
+        setError('Please review your details and try again.');
+      } else {
+        setError('Failed to create account. Please try again.');
+      }
     } finally {
       setIsLoading(false);
     }
@@ -121,7 +128,7 @@ export default function RegisterPage() {
               className="font-hand text-3xl xl:text-4xl text-yellow mt-6 mb-10"
               style={{ transform: 'rotate(-2deg)' }}
             >
-              Start your journey today ✦
+              Start your journey today
             </motion.p>
 
             {/* Floating badges */}
@@ -133,15 +140,15 @@ export default function RegisterPage() {
             >
               <span className="inline-flex items-center gap-2 px-4 py-2 bg-cyan text-ink font-mono text-xs font-bold uppercase tracking-[0.12em] border-[3px] border-ink"
                 style={{ boxShadow: '4px 4px 0px #0A0A0A' }}>
-                ⚡ AI-Powered
+                AI-Powered
               </span>
               <span className="inline-flex items-center gap-2 px-4 py-2 bg-yellow text-ink font-mono text-xs font-bold uppercase tracking-[0.12em] border-[3px] border-ink"
                 style={{ boxShadow: '4px 4px 0px #0A0A0A' }}>
-                ⚖️ Equal Opportunity
+                Equal Opportunity
               </span>
               <span className="inline-flex items-center gap-2 px-4 py-2 bg-pink text-paper font-mono text-xs font-bold uppercase tracking-[0.12em] border-[3px] border-ink"
                 style={{ boxShadow: '4px 4px 0px #0A0A0A' }}>
-                🔒 Bias-Free
+                Bias-Free
               </span>
             </motion.div>
 
@@ -203,7 +210,7 @@ export default function RegisterPage() {
               {/* Error message */}
               {error && (
                 <div className="mb-4 px-4 py-3 bg-[#93000a] border-[3px] border-[#ffb4ab] text-[#ffb4ab] font-mono text-xs font-bold">
-                  ⚠ {error}
+                  Error: {error}
                 </div>
               )}
 
@@ -294,22 +301,22 @@ export default function RegisterPage() {
                     {/* Student Card */}
                     <motion.button
                       type="button"
-                      onClick={() => setRole('student')}
+                      onClick={() => setRole('STUDENT')}
                       whileHover={{ y: -2 }}
                       whileTap={{ scale: 0.97 }}
                       className={`p-4 border-[3px] text-left cursor-pointer transition-all ${
-                        role === 'student'
+                        role === 'STUDENT'
                           ? 'bg-yellow border-ink text-ink'
                           : 'bg-[#0e0e0e] border-paper text-paper hover:border-yellow'
                       }`}
                       style={{
-                        boxShadow: role === 'student' ? '4px 4px 0px #0A0A0A' : '4px 4px 0px #353534',
+                        boxShadow: role === 'STUDENT' ? '4px 4px 0px #0A0A0A' : '4px 4px 0px #353534',
                         borderRadius: 0
                       }}
                     >
-                      <div className="text-2xl mb-2">🎓</div>
+                      <div className="mb-2 inline-flex h-8 w-8 items-center justify-center border-2 border-current font-mono text-[10px] font-bold leading-none">ST</div>
                       <div className="font-sans font-bold text-sm uppercase">Student</div>
-                      <div className={`font-mono text-[10px] mt-1 ${role === 'student' ? 'text-[#393000]' : 'text-[#979179]'}`}>
+                      <div className={`font-mono text-[10px] mt-1 ${role === 'STUDENT' ? 'text-[#393000]' : 'text-[#979179]'}`}>
                         Find opportunities
                       </div>
                     </motion.button>
@@ -317,22 +324,22 @@ export default function RegisterPage() {
                     {/* Recruiter Card */}
                     <motion.button
                       type="button"
-                      onClick={() => setRole('recruiter')}
+                      onClick={() => setRole('RECRUITER')}
                       whileHover={{ y: -2 }}
                       whileTap={{ scale: 0.97 }}
                       className={`p-4 border-[3px] text-left cursor-pointer transition-all ${
-                        role === 'recruiter'
+                        role === 'RECRUITER'
                           ? 'bg-cyan border-ink text-ink'
                           : 'bg-[#0e0e0e] border-paper text-paper hover:border-cyan'
                       }`}
                       style={{
-                        boxShadow: role === 'recruiter' ? '4px 4px 0px #0A0A0A' : '4px 4px 0px #353534',
+                        boxShadow: role === 'RECRUITER' ? '4px 4px 0px #0A0A0A' : '4px 4px 0px #353534',
                         borderRadius: 0
                       }}
                     >
-                      <div className="text-2xl mb-2">💼</div>
+                      <div className="mb-2 inline-flex h-8 w-8 items-center justify-center border-2 border-current font-mono text-[10px] font-bold leading-none">RC</div>
                       <div className="font-sans font-bold text-sm uppercase">Recruiter</div>
-                      <div className={`font-mono text-[10px] mt-1 ${role === 'recruiter' ? 'text-[#00382f]' : 'text-[#979179]'}`}>
+                      <div className={`font-mono text-[10px] mt-1 ${role === 'RECRUITER' ? 'text-[#00382f]' : 'text-[#979179]'}`}>
                         Find talent
                       </div>
                     </motion.button>
@@ -397,7 +404,7 @@ export default function RegisterPage() {
               className="font-hand text-lg text-[#979179] mt-4 text-center"
               style={{ transform: 'rotate(-2deg)' }}
             >
-              no bias. just talent. 🌟
+              no bias. just talent.
             </motion.p>
           </motion.div>
         </div>

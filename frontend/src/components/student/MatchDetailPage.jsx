@@ -24,6 +24,13 @@ import { SkeletonCard } from '../shared/Skeletons'
 import SkillTag from '../shared/SkillTag'
 import { useToast } from '../shared/useToast'
 
+function toFriendlyMessage(error, fallback) {
+  const status = error?.response?.status
+  if (status === 401 || status === 403) return 'Your session has expired. Please sign in again.'
+  if (status === 429) return 'Too many requests right now. Please retry in a moment.'
+  return fallback
+}
+
 export default function MatchDetailPage() {
   const { id } = useParams()
   const navigate = useNavigate()
@@ -62,7 +69,7 @@ export default function MatchDetailPage() {
         return
       }
       setMatch(null)
-      setLoadError(error?.message || 'Unable to load match detail right now.')
+      setLoadError(toFriendlyMessage(error, 'Unable to load match detail right now.'))
       setLoading(false)
     })
 
@@ -132,7 +139,7 @@ export default function MatchDetailPage() {
             <p className="uppercase tracking-wider text-ink">How this score was generated</p>
             <button
               type="button"
-              onClick={() => navigate('/how-matching-works')}
+              onClick={() => navigate('/student/how-it-works')}
               className="btn-secondary btn-feedback"
             >
               Full Method

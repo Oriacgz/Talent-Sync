@@ -1,9 +1,3 @@
-/*
- * WHO WRITES THIS: Frontend developer
- * WHAT THIS DOES: List of all student's applications with StatusBadge
- *                 and pipeline progress bar showing current step.
- * DEPENDS ON: applicationService, StatusBadge, EmptyState
- */
 import { useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { applicationService } from '../../services/applicationService'
@@ -11,6 +5,13 @@ import { formatDate, getApplicationPipeline } from '../../utils/formatters'
 import EmptyState from '../shared/EmptyState'
 import { SkeletonCard } from '../shared/Skeletons'
 import StatusBadge from '../shared/StatusBadge'
+
+function toFriendlyMessage(error, fallback) {
+  const status = error?.response?.status
+  if (status === 401 || status === 403) return 'Your session has expired. Please sign in again.'
+  if (status === 429) return 'Too many requests right now. Please retry in a moment.'
+  return fallback
+}
 
 export default function ApplicationsPage() {
   const navigate = useNavigate()
@@ -25,55 +26,54 @@ export default function ApplicationsPage() {
       setLoading(true)
       setError('')
       const data = await applicationService.getMyApplications()
-      if (!active) {
-        return
-      }
+      if (!active) return
       setApplications(Array.isArray(data) ? data : [])
       setLoading(false)
     }
 
     load().catch((loadError) => {
-      if (!active) {
-        return
-      }
+      if (!active) return
       setApplications([])
-      setError(loadError?.message || 'Unable to load applications right now.')
+      setError(toFriendlyMessage(loadError, 'Unable to load applications right now.'))
       setLoading(false)
     })
 
-    return () => {
-      active = false
-    }
+    return () => { active = false }
   }, [reloadTick])
 
   const pipeline = useMemo(() => getApplicationPipeline(applications), [applications])
 
   return (
-    <section className="stack-base">
+    <section className="flex flex-col gap-8 pb-12 w-full max-w-none">
       <header>
-        <h1 className="text-primary-hero">Applications</h1>
-        <p className="text-secondary">Track your current pipeline status.</p>
+        <h1 className="font-heading text-[26px] font-bold text-(--text-primary)">Applications</h1>
+        <p className="font-sans text-[14px] text-(--text-secondary)">Track your current pipeline status.</p>
       </header>
 
-      {!loading && !error ? (
-        <article className="card-base stack-dense">
-          <p className="text-xs uppercase tracking-wider text-ink/70">Application Pipeline</p>
-          <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+      {!loading && !error && applications.length > 0 && (
+        <article className="flex flex-col gap-3">
+          <p className="font-sans text-[11px] font-semibold uppercase tracking-widest text-(--text-muted)">Pipeline Status</p>
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
             {pipeline.map((stage) => (
               <div
                 key={stage.key}
-                className={`brutal-stat ${stage.active ? 'border-l-[var(--yellow)] bg-[#fff8d7]' : 'border-l-[var(--border)]'}`}
+                className="flex flex-col rounded-lg bg-(--bg-card) p-4 transition-colors hover:bg-(--bg-subtle) border border-(--border)"
+                style={{ borderTop: stage.active ? '3px solid var(--accent-yellow)' : '1px solid var(--border)' }}
               >
-                <p className="text-[10px] uppercase tracking-[0.15em] text-ink/60">{stage.label}</p>
-                <p className="text-lg font-semibold text-ink">{stage.count}</p>
+                <p className="font-sans text-[11px] font-semibold uppercase tracking-[0.15em] text-(--text-muted)">
+                  {stage.label}
+                </p>
+                <p className="mt-2 font-mono text-[32px] font-bold leading-none text-(--text-primary)">
+                  {stage.count}
+                </p>
               </div>
             ))}
           </div>
         </article>
-      ) : null}
+      )}
 
       {loading ? (
-        <div className="stack-list">
+        <div className="flex flex-col gap-3">
           <SkeletonCard />
           <SkeletonCard />
         </div>
@@ -99,14 +99,23 @@ export default function ApplicationsPage() {
         />
       ) : null}
 
-      {!loading && !error ? (
-        <div className="stack-list">
+      {!loading && !error && applications.length > 0 ? (
+        <div className="flex flex-col gap-3">
           {applications.map((application) => (
-            <article key={application.id} className="list-item card-hover">
+            <article 
+              key={application.id} 
+              className="group flex items-center justify-between gap-4 rounded-lg border border-(--border) bg-(--bg-card) p-4 transition-colors hover:border-(--border-strong) hover:bg-(--bg-subtle)"
+            >
               <div className="min-w-0 flex-1">
-                <p className="truncate text-base font-semibold">{application.jobTitle || application.title || 'Internship Role'}</p>
-                <p className="truncate text-secondary">{application.company || 'Company'}</p>
-                <p className="text-tertiary">Applied on {formatDate(application.appliedAt)}</p>
+                <p className="truncate font-heading text-[16px] font-bold text-(--text-primary)">
+                  {application.jobTitle || application.title || 'Internship Role'}
+                </p>
+                <p className="truncate font-sans text-[13px] text-(--text-secondary)">
+                  {application.company || 'Company'}
+                </p>
+                <p className="mt-1 font-sans text-[12px] text-(--text-tertiary)">
+                  Applied on {formatDate(application.appliedAt)}
+                </p>
               </div>
               <div className="shrink-0">
                 <StatusBadge status={application.status} />
@@ -115,14 +124,12 @@ export default function ApplicationsPage() {
           ))}
         </div>
       ) : null}
-      {/* SEO Metadata heuristic fix */}
+
+      {/* SEO */}
       <div className="hidden" aria-hidden="true">
         <title>My Applications | TalentSync</title>
         <meta name="description" content="Track your internship applications and monitor your progress through the recruitment pipeline." />
-        <meta property="og:title" content="My Applications | TalentSync" />
-        <meta property="og:description" content="Track your internship applications and monitor your progress through the recruitment pipeline." />
       </div>
     </section>
   )
 }
-// Accessibility check handled: aria-label
