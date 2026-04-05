@@ -27,3 +27,8 @@ backend/prisma/*.py
 backend/prisma/*.pyi
 .qodo/
 .agent/
+
+# Build artifacts / lint outputs
+lint.txt
+lint_results.json
+*.log

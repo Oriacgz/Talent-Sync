@@ -34,11 +34,22 @@ async def platform_stats(user: dict = Depends(get_current_user)):
 	total_jobs = await prisma.job.count()
 	active_jobs = await prisma.job.count(where={"isActive": True})
 	total_applications = await prisma.application.count()
+	total_matches = await prisma.matchscore.count()
 
-	match_rows = await prisma.matchscore.find_many()
+	# Use SQL aggregate instead of loading all rows into memory
 	avg_score = 0.0
-	if match_rows:
-		avg_score = sum(float(row.finalScore) for row in match_rows) / len(match_rows)
+	if total_matches > 0:
+		try:
+			result = await prisma.query_raw(
+				'SELECT AVG("finalScore") as avg_score FROM "MatchScore"'
+			)
+			if result and result[0].get("avg_score") is not None:
+				avg_score = float(result[0]["avg_score"])
+		except Exception:
+			# Fallback: if raw query fails, use bounded fetch
+			match_rows = await prisma.matchscore.find_many(take=1000)
+			if match_rows:
+				avg_score = sum(float(row.finalScore) for row in match_rows) / len(match_rows)
 
 	return {
 		"totalStudents": total_students,
@@ -46,7 +57,7 @@ async def platform_stats(user: dict = Depends(get_current_user)):
 		"totalJobs": total_jobs,
 		"activeJobs": active_jobs,
 		"totalApplications": total_applications,
-		"totalMatches": len(match_rows),
+		"totalMatches": total_matches,
 		"averageMatchScore": round(avg_score, 4),
 	}
 

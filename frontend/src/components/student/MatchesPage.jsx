@@ -14,6 +14,7 @@ import { Link, useNavigate } from 'react-router-dom'
 import { ChevronRight, ArrowRight } from 'lucide-react'
 import { matchService } from '../../services/matchService'
 import { applicationService } from '../../services/applicationService'
+import { profileService } from '../../services/profileService'
 import { useMatchStore } from '../../store/matchStore'
 import { useToast } from '../shared/useToast'
 import EmptyState from '../shared/EmptyState'
@@ -136,6 +137,7 @@ export default function MatchesPage() {
 
   const [applyingId, setApplyingId] = useState(null)
   const [reloadTick, setReloadTick] = useState(0)
+  const [profileIncomplete, setProfileIncomplete] = useState(false)
 
   useEffect(() => {
     let active = true
@@ -145,8 +147,23 @@ export default function MatchesPage() {
         const data = await matchService.getMyMatches(50)
         if (active && Array.isArray(data)) setMatches(data)
       } catch {
-        // Falls through to mock data via resolveData
+        // Leave existing matches unchanged if loading fails.
       }
+      
+      try {
+        // We reuse the same heuristic from Dashboard
+        const profileData = await profileService.getMyProfile()
+        if (active && profileData) {
+          let score = 0
+          if (profileData.fullName) score += 20
+          if (profileData.college && profileData.cgpa) score += 20
+          if (profileData.skills?.length > 0) score += 20
+          if (profileData.bio) score += 10
+          if (profileData.resume) score += 30
+          setProfileIncomplete(score <= 50)
+        }
+      } catch {}
+      
       if (active) setLoading(false)
     }
     load()
@@ -186,10 +203,10 @@ export default function MatchesPage() {
         </div>
       ) : sortedMatches.length === 0 ? (
         <EmptyState
-          title="No matches yet"
-          subtitle="Complete your profile to unlock AI-ranked internship recommendations"
-          actionLabel="Complete Profile"
-          onAction={() => navigate('/student/profile')}
+          title={profileIncomplete ? "No matches yet" : "No matches found right now"}
+          subtitle={profileIncomplete ? "Complete your profile to unlock AI-ranked internship recommendations" : "Try updating your profile skills, or check back later when new roles are posted."}
+          actionLabel={profileIncomplete ? "Complete Profile" : null}
+          onAction={profileIncomplete ? () => navigate('/student/onboarding') : null}
           icon="*"
         />
       ) : (

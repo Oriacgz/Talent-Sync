@@ -2,12 +2,27 @@
 
 from __future__ import annotations
 
-from fastapi import APIRouter, Body, Depends
+from typing import Optional
+
+from fastapi import APIRouter, Depends
+from pydantic import BaseModel, ConfigDict, Field
 
 from app.db.database import get_prisma
 from app.middleware.auth import require_role
 
 router = APIRouter(prefix="/recruiters", tags=["recruiters"])
+
+
+class UpdateRecruiterProfileRequest(BaseModel):
+	model_config = ConfigDict(populate_by_name=True, extra="ignore")
+
+	fullName: Optional[str] = Field(default=None, max_length=100)
+	companyName: Optional[str] = Field(default=None, max_length=200)
+	companyWebsite: Optional[str] = Field(default=None, max_length=500)
+	industry: Optional[str] = Field(default=None, max_length=100)
+	companySize: Optional[str] = Field(default=None, max_length=50)
+	location: Optional[str] = Field(default=None, max_length=200)
+	bio: Optional[str] = Field(default=None, max_length=2000)
 
 
 async def _ensure_recruiter_profile(user: dict):
@@ -50,27 +65,13 @@ async def get_profile(user: dict = Depends(require_role("RECRUITER"))):
 
 @router.put("/me/profile")
 async def update_profile(
-	payload: dict = Body(default={}),
+	payload: UpdateRecruiterProfileRequest,
 	user: dict = Depends(require_role("RECRUITER")),
 ):
 	prisma = get_prisma()
 	profile = await _ensure_recruiter_profile(user)
 
-	update_data: dict = {}
-	if "fullName" in payload or "full_name" in payload:
-		update_data["fullName"] = str(payload.get("fullName") or payload.get("full_name") or profile.fullName)
-	if "companyName" in payload or "company_name" in payload:
-		update_data["companyName"] = str(payload.get("companyName") or payload.get("company_name") or profile.companyName)
-	if "companyWebsite" in payload or "company_website" in payload:
-		update_data["companyWebsite"] = payload.get("companyWebsite") or payload.get("company_website")
-	if "industry" in payload:
-		update_data["industry"] = payload.get("industry")
-	if "companySize" in payload or "company_size" in payload:
-		update_data["companySize"] = payload.get("companySize") or payload.get("company_size")
-	if "location" in payload:
-		update_data["location"] = payload.get("location")
-	if "bio" in payload:
-		update_data["bio"] = payload.get("bio")
+	update_data = payload.model_dump(exclude_none=True)
 
 	if update_data:
 		profile = await prisma.recruiterprofile.update(
@@ -78,4 +79,4 @@ async def update_profile(
 			data=update_data,
 		)
 
-	return _serialize_profile(user, profile)
+	return _serialize_profile(user, profile)

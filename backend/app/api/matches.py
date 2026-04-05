@@ -1,239 +1,234 @@
-"""Match APIs for student and recruiter experiences."""
+"""
+backend/app/api/matches.py
+Match API endpoints — student gets their matches,
+recruiter sees ranked candidates for their job.
+
+Register in main.py:
+    from app.api.matches import router as matches_router
+    app.include_router(matches_router, prefix="/api/matches", tags=["matches"])
+"""
 
 from __future__ import annotations
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+import logging
+
+from fastapi import APIRouter, Depends, HTTPException, status
 
 from app.db.database import get_prisma
-from app.middleware.auth import require_role
-from app.schemas.match import MatchResponse
+from app.middleware.auth import get_current_user
+from app.schemas.match import CandidateMatchResponse, MatchResponse
+from app.services.matching_service import (
+    run_matching_for_job,
+    run_matching_for_student,
+)
 
 router = APIRouter(prefix="/matches", tags=["matches"])
-
-_UI_STATUS_PREFIX = "__TS_UI_STATUS__:"
-
-
-def _collect_required_skills(job) -> list[str]:
-	return [row.skill.name for row in (job.jobSkills or []) if row.skill]
+logger = logging.getLogger(__name__)
 
 
-def _collect_student_skills(student) -> list[str]:
-	return [row.skill.name for row in (student.studentSkills or []) if row.skill]
+# ── Student endpoints ─────────────────────────────────────────────────────────
 
-
-def _match_status_label(raw_status: str | None) -> str:
-	status_map = {
-		"PENDING": "unseen",
-		"REVIEWED": "reviewed",
-		"ACCEPTED": "accepted",
-		"DECLINED": "declined",
-	}
-	normalized = str(raw_status or "PENDING").upper()
-	return status_map.get(normalized, normalized.lower())
-
-
-def _split_cover_note(cover_note: str | None) -> tuple[str | None, str | None]:
-	if not cover_note:
-		return None, None
-	if not cover_note.startswith(_UI_STATUS_PREFIX):
-		return None, cover_note
-	head, _, tail = cover_note.partition("\n")
-	marker = head.replace(_UI_STATUS_PREFIX, "", 1).strip().upper() or None
-	return marker, tail or None
-
-
-def _application_ui_status(app) -> str | None:
-	if not app:
-		return None
-	marker, _ = _split_cover_note(getattr(app, "coverNote", None))
-	if marker in {"REVIEWED", "SELECTED"}:
-		return marker
-	if str(app.status).upper() == "HIRED":
-		return "SELECTED"
-	return str(app.status).upper()
-
-
-def _serialize_student_match(match_row, student_skills: set[str]) -> MatchResponse:
-	job = match_row.job
-	required_skills = _collect_required_skills(job)
-	required_lower = {skill.lower() for skill in required_skills}
-	missing_skills = [skill for skill in required_skills if skill.lower() not in student_skills]
-
-	company = None
-	if getattr(job, "recruiter", None):
-		company = job.recruiter.companyName
-
-	shap_values = match_row.shapValues if isinstance(match_row.shapValues, dict) else {}
-
-	return MatchResponse(
-		id=match_row.id,
-		studentId=match_row.studentId,
-		jobId=match_row.jobId,
-		title=job.title,
-		roleTitle=job.title,
-		company=company,
-		companyName=company,
-		location=job.location,
-		score=float(match_row.finalScore),
-		similarityScore=float(match_row.similarityScore),
-		ruleScore=float(match_row.ruleScore),
-		finalScore=float(match_row.finalScore),
-		rank=match_row.rank,
-		status=_match_status_label(match_row.status),
-		requiredSkills=required_skills,
-		missingSkills=missing_skills,
-		shapValues=shap_values,
-		explanation=match_row.explanation,
-		createdAt=match_row.createdAt,
-	)
-
-
-@router.get("/me", response_model=list[MatchResponse])
-async def my_matches(
-	limit: int = Query(default=50, ge=1, le=200),
-	user: dict = Depends(require_role("STUDENT")),
+@router.get("", response_model=list[MatchResponse])
+async def get_my_matches(
+    current_user=Depends(get_current_user),
 ):
-	prisma = get_prisma()
+    """
+    GET /api/matches
+    Student: returns top 10 matched jobs.
+    Uses cached MatchScore records if available,
+    triggers fresh matching if none exist.
+    """
+    if str(current_user.get("role", "")).upper() != "STUDENT":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Only students can view their matches.",
+        )
 
-	student = await prisma.studentprofile.find_unique(
-		where={"userId": user["id"]},
-		include={"studentSkills": {"include": {"skill": True}}},
-	)
-	if not student:
-		return []
+    prisma = get_prisma()
+    user_id = current_user.get("id")
+    if not user_id:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="User not found in token")
 
-	student_skills = {skill.lower() for skill in _collect_student_skills(student)}
+    # Check for existing cached matches
+    profile = await prisma.studentprofile.find_unique(
+        where={"userId": user_id}
+    )
+    if not profile:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Student profile not found. Complete onboarding first.",
+        )
 
-	rows = await prisma.matchscore.find_many(
-		where={"studentId": student.id},
-		include={
-			"job": {
-				"include": {
-					"recruiter": True,
-					"jobSkills": {"include": {"skill": True}},
-				}
-			},
-		},
-		order={"finalScore": "desc"},
-		take=limit,
-	)
+    cached = await prisma.matchscore.find_many(
+        where={"studentId": profile.id},
+        order={"finalScore": "desc"},
+        take=10,
+        include={"job": {"include": {"recruiter": True}}},
+    )
 
-	return [_serialize_student_match(row, student_skills) for row in rows]
+    if cached:
+        # Build application lookup
+        applications = await prisma.application.find_many(
+            where={"studentId": profile.id}
+        )
+        applied_job_ids = {a.jobId for a in applications}
+
+        return [
+            MatchResponse(
+                job_id=m.jobId,
+                job_title=m.job.title,
+                company=m.job.recruiter.companyName if m.job.recruiter else "Unknown",
+                location=m.job.location,
+                work_mode=str(m.job.workMode) if m.job.workMode else None,
+                job_type=str(m.job.jobType) if m.job.jobType else None,
+                salary_min=m.job.salaryMin,
+                salary_max=m.job.salaryMax,
+                similarity_score=m.similarityScore,
+                ml_score=m.ruleScore,
+                final_score=m.finalScore,
+                top_reasons=(
+                    m.explanation.split(" | ") if m.explanation else []
+                ),
+                shap_values=dict(m.shapValues) if m.shapValues else {},
+                score_breakdown={
+                    "similarity_score": m.similarityScore,
+                    "ml_score": m.ruleScore,
+                    "final_score": m.finalScore,
+                },
+                applied=m.jobId in applied_job_ids,
+                rank=m.rank,
+            )
+            for m in cached
+        ]
+
+    # No cache — run matching fresh
+    return await _run_and_format(user_id, profile)
 
 
-@router.get("/{match_id}/detail", response_model=MatchResponse)
-async def match_detail(
-	match_id: str,
-	user: dict = Depends(require_role("STUDENT")),
+@router.get("/refresh", response_model=list[MatchResponse])
+async def refresh_matches(
+    current_user=Depends(get_current_user),
 ):
-	prisma = get_prisma()
-	student = await prisma.studentprofile.find_unique(
-		where={"userId": user["id"]},
-		include={"studentSkills": {"include": {"skill": True}}},
-	)
-	if not student:
-		raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Student profile not found")
+    """
+    GET /api/matches/refresh
+    Forces a fresh matching run, ignoring cached scores.
+    """
+    if str(current_user.get("role", "")).upper() != "STUDENT":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Only students can refresh their matches.",
+        )
 
-	row = await prisma.matchscore.find_first(
-		where={"id": match_id, "studentId": student.id},
-		include={
-			"job": {
-				"include": {
-					"recruiter": True,
-					"jobSkills": {"include": {"skill": True}},
-				}
-			},
-		},
-	)
-	if not row:
-		raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Match not found")
+    prisma = get_prisma()
+    user_id = current_user.get("id")
+    if not user_id:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="User not found in token")
+    profile = await prisma.studentprofile.find_unique(
+        where={"userId": user_id}
+    )
+    if not profile:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Student profile not found.",
+        )
 
-	student_skills = {skill.lower() for skill in _collect_student_skills(student)}
-	return _serialize_student_match(row, student_skills)
+    return await _run_and_format(user_id, profile)
 
 
-@router.get("/job/{job_id}/candidates")
-async def job_candidates(
-	job_id: str,
-	user: dict = Depends(require_role("RECRUITER")),
+async def _run_and_format(user_id: str, profile) -> list[MatchResponse]:
+    """Run matching and format results as MatchResponse list."""
+    prisma = get_prisma()
+
+    try:
+        results = await run_matching_for_student(user_id)
+    except Exception as exc:
+        logger.exception("Matching failed for user %s", user_id)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Matching engine error. Please try again shortly.",
+        ) from exc
+
+    if not results:
+        return []
+
+    # Application lookup
+    applications = await prisma.application.find_many(
+        where={"studentId": profile.id}
+    )
+    applied_job_ids = {a.jobId for a in applications}
+
+    formatted = []
+    for i, r in enumerate(results, 1):
+        job = r["job"]
+        recruiter = getattr(job, "recruiter", None)
+        formatted.append(
+            MatchResponse(
+                job_id=r["job_id"],
+                job_title=job.title,
+                company=recruiter.companyName if recruiter else "Unknown",
+                location=job.location,
+                work_mode=str(job.workMode) if job.workMode else None,
+                job_type=str(job.jobType) if job.jobType else None,
+                salary_min=job.salaryMin,
+                salary_max=job.salaryMax,
+                similarity_score=r["similarity_score"],
+                ml_score=r["ml_score"],
+                final_score=r["final_score"],
+                top_reasons=r["top_reasons"],
+                shap_values=r["shap_values"],
+                score_breakdown=r["score_breakdown"],
+                applied=r["job_id"] in applied_job_ids,
+                rank=i,
+            )
+        )
+    return formatted
+
+
+# ── Recruiter endpoint ────────────────────────────────────────────────────────
+
+@router.get("/job/{job_id}", response_model=list[CandidateMatchResponse])
+async def get_candidates_for_job(
+    job_id: str,
+    current_user=Depends(get_current_user),
 ):
-	prisma = get_prisma()
+    """
+    GET /api/matches/job/{job_id}
+    Recruiter: returns ranked list of students for their job.
+    """
+    if str(current_user.get("role", "")).upper() != "RECRUITER":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Only recruiters can view candidates.",
+        )
 
-	recruiter = await prisma.recruiterprofile.find_unique(where={"userId": user["id"]})
-	if not recruiter:
-		raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Recruiter profile not found")
+    user_id = current_user.get("id")
+    if not user_id:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="User not found in token")
 
-	if job_id.lower() == "all":
-		recruiter_jobs = await prisma.job.find_many(where={"recruiterId": recruiter.id})
-		job_ids = [job.id for job in recruiter_jobs]
-		if not job_ids:
-			return []
-		where_clause = {"jobId": {"in": job_ids}}
-	else:
-		job = await prisma.job.find_unique(where={"id": job_id})
-		if not job:
-			raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Job not found")
-		if job.recruiterId != recruiter.id:
-			raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="You can only view candidates for your jobs")
-		where_clause = {"jobId": job_id}
+    try:
+        results = await run_matching_for_job(
+            job_id=job_id,
+            recruiter_user_id=user_id,
+        )
+    except PermissionError as exc:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=str(exc))
+    except ValueError as exc:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc))
+    except Exception as exc:
+        logger.exception("Candidate matching failed for job %s", job_id)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Matching engine error.",
+        ) from exc
 
-	match_rows = await prisma.matchscore.find_many(
-		where=where_clause,
-		include={
-			"job": {"include": {"jobSkills": {"include": {"skill": True}}}},
-			"student": {
-				"include": {
-					"studentSkills": {"include": {"skill": True}},
-				}
-			},
-		},
-		order={"finalScore": "desc"},
-		take=500,
-	)
-
-	if not match_rows:
-		return []
-
-	student_job_pairs = [{"studentId": row.studentId, "jobId": row.jobId} for row in match_rows]
-	applications = await prisma.application.find_many(
-		where={"OR": student_job_pairs},
-	)
-	app_by_pair = {(app.studentId, app.jobId): app for app in applications}
-
-	candidates: list[dict] = []
-	for row in match_rows:
-		student = row.student
-		job = row.job
-		app = app_by_pair.get((row.studentId, row.jobId))
-
-		skills = _collect_student_skills(student)
-		shap_values = row.shapValues if isinstance(row.shapValues, dict) else {}
-		required_skills = _collect_required_skills(job)
-		missing = [skill for skill in required_skills if skill.lower() not in {s.lower() for s in skills}]
-
-		candidates.append(
-			MatchResponse(
-				id=row.id,
-				studentId=row.studentId,
-				jobId=row.jobId,
-				fullName=student.fullName,
-				college=student.college,
-				gpa=student.cgpa,
-				skills=skills,
-				score=float(row.finalScore),
-				finalScore=float(row.finalScore),
-				similarityScore=float(row.similarityScore),
-				ruleScore=float(row.ruleScore),
-				shapValues=shap_values,
-				explanation=row.explanation,
-				status=_application_ui_status(app) or _match_status_label(row.status),
-				applicationId=app.id if app else None,
-				title=job.title,
-				roleTitle=job.title,
-				requiredSkills=required_skills,
-				missingSkills=missing,
-				createdAt=row.createdAt,
-			).model_dump()
-		)
-
-	return candidates
+    return [
+        CandidateMatchResponse(
+            student_id=r["student_id"],
+            student_name=r["student_name"],
+            final_score=r["final_score"],
+            similarity_score=r["similarity_score"],
+            top_reasons=r["top_reasons"],
+            shap_values=r["shap_values"],
+        )
+        for r in results
+    ]

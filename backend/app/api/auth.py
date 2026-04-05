@@ -5,16 +5,18 @@
 #                 POST /auth/logout — stateless, just returns success.
 # DEPENDS ON: auth_service.py, User model, StudentProfile, RecruiterProfile
 
-from fastapi import APIRouter, HTTPException, status
+from fastapi import APIRouter, HTTPException, Request, status
 from app.schemas.auth import RegisterRequest, LoginRequest, TokenResponse, RefreshRequest
 from app.services.auth_service import hash_password, verify_password, create_access_token, create_refresh_token, decode_token
 from app.db.database import prisma
+from app.middleware.rate_limit import limiter
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
 
 @router.post("/register", response_model=TokenResponse)
-async def register(req: RegisterRequest):
+@limiter.limit("5/minute")
+async def register(request: Request, req: RegisterRequest):
     req.email = req.email.strip().lower()
     # Check if email is already registered
     existing_user = await prisma.user.find_unique(where={"email": req.email})
@@ -81,7 +83,8 @@ async def register(req: RegisterRequest):
 
 
 @router.post("/login", response_model=TokenResponse)
-async def login(req: LoginRequest):
+@limiter.limit("10/minute")
+async def login(request: Request, req: LoginRequest):
     req.email = req.email.strip().lower()
     user = await prisma.user.find_unique(
         where={"email": req.email},
@@ -119,7 +122,8 @@ async def login(req: LoginRequest):
 
 
 @router.post("/refresh", response_model=TokenResponse)
-async def refresh(req: RefreshRequest):
+@limiter.limit("20/minute")
+async def refresh(request: Request, req: RefreshRequest):
     try:
         payload = decode_token(req.refresh_token)
         if payload.get("type") != "refresh":

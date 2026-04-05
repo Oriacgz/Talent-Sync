@@ -1,44 +1,43 @@
-"""Match response contract used by student and recruiter flows."""
+"""
+backend/app/schemas/match.py
+Pydantic schemas for match API responses.
+"""
 
 from __future__ import annotations
 
-from datetime import datetime
-from typing import Any
+from pydantic import BaseModel
 
-from pydantic import BaseModel, ConfigDict
+
+class ScoreBreakdown(BaseModel):
+    similarity_score: float
+    ml_score: float
+    final_score: float
 
 
 class MatchResponse(BaseModel):
-    model_config = ConfigDict(from_attributes=True, populate_by_name=True)
-
-    id: str
-    studentId: str
-    jobId: str
-
-    # Job-facing fields for student UI
-    title: str | None = None
-    roleTitle: str | None = None
-    company: str | None = None
-    companyName: str | None = None
-    location: str | None = None
-
-    # Candidate-facing fields for recruiter UI
-    fullName: str | None = None
-    college: str | None = None
-    gpa: float | None = None
-    skills: list[str] = []
-    applicationId: str | None = None
-
-    # Score fields
-    score: float
-    similarityScore: float | None = None
-    ruleScore: float | None = None
-    finalScore: float
-
+    job_id: str
+    job_title: str
+    company: str
+    location: str | None
+    work_mode: str | None
+    job_type: str | None
+    salary_min: int | None
+    salary_max: int | None
+    similarity_score: float
+    ml_score: float
+    final_score: float
+    top_reasons: list[str]
+    shap_values: dict
+    score_breakdown: ScoreBreakdown
+    applied: bool = False
     rank: int | None = None
-    status: str | None = None
-    requiredSkills: list[str] = []
-    missingSkills: list[str] = []
-    shapValues: dict[str, Any] | None = None
-    explanation: str | None = None
-    createdAt: datetime | None = None
+
+
+class CandidateMatchResponse(BaseModel):
+    """Used by recruiter to see ranked students for a job."""
+    student_id: str
+    student_name: str
+    final_score: float
+    similarity_score: float
+    top_reasons: list[str]
+    shap_values: dict
