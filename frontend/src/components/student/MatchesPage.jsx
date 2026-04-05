@@ -147,7 +147,7 @@ export default function MatchesPage() {
         const data = await matchService.getMyMatches(50)
         if (active && Array.isArray(data)) setMatches(data)
       } catch {
-        // Falls through to mock data via resolveData
+        // Leave existing matches unchanged if loading fails.
       }
       
       try {
