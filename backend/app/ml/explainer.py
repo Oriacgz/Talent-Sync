@@ -5,53 +5,56 @@ SHAP-based explanation of why a student matched a job.
 
 from __future__ import annotations
 
-from pathlib import Path
-
-import joblib
 import numpy as np
 import shap
 
-from app.ml.scorer import MatchScorer, FEATURE_NAMES, SIMILARITY_WEIGHT, ML_WEIGHT
-
-ARTIFACTS_DIR = Path(__file__).parent / "artifacts"
+from app.ml.scorer import MatchScorer, SIMILARITY_WEIGHT, ML_WEIGHT
 
 # Human-readable templates for each feature
 _FEATURE_TEMPLATES = {
-    "cosine_similarity": {
+    "semantic_score": {
         "positive": "Your profile is semantically similar to this job description",
         "negative": "Your profile text is not a strong semantic match for this job",
     },
-    "skill_overlap_count": {
-        "positive": "You have several skills that directly match the job requirements",
-        "negative": "Few of your skills overlap with the required skills for this job",
+    "academic_score": {
+        "positive": "Your academic profile meets the job's requirements",
+        "negative": "Your academic profile may not fully meet the job's criteria",
     },
-    "skill_overlap_ratio": {
-        "positive": "A high proportion of your skills align with what this job needs",
-        "negative": "Most of the required skills are not yet in your profile",
+    "preference_score": {
+        "positive": "This role and location align with your preferences",
+        "negative": "This role or location differs from your stated preferences",
     },
-    "cgpa_meets_requirement": {
-        "positive": "Your CGPA meets or exceeds the minimum requirement",
-        "negative": "Your CGPA is below the minimum required for this job",
-    },
-    "branch_eligible": {
-        "positive": "Your branch/degree is eligible for this job",
-        "negative": "Your branch may not meet the eligibility criteria for this role",
-    },
-    "experience_match": {
+    "experience_score": {
         "positive": "Your experience level matches what this job is looking for",
         "negative": "Your experience level doesn't match the job's requirement",
     },
-    "role_match": {
-        "positive": "This role aligns with your preferred job types",
-        "negative": "This role differs from your stated preferred roles",
+    "skill_gap_score": {
+        "positive": "A high proportion of your skills align with what this job needs",
+        "negative": "Most of the required skills are not yet in your profile",
     },
-    "location_match": {
-        "positive": "This job is in one of your preferred locations",
-        "negative": "This job's location doesn't match your preferences",
+    "cgpa_normalized": {
+        "positive": "Your GPA is competitive for this position",
+        "negative": "Your GPA is below the typical range for this role",
     },
-    "education_match": {
-        "positive": "Your educational background meets the job's requirement",
-        "negative": "Your education level may not fully match the job requirement",
+    "experience_months": {
+        "positive": "You have substantial practical experience",
+        "negative": "You have limited practical experience for this role",
+    },
+    "certification_bonus": {
+        "positive": "Your certifications give you an edge for this position",
+        "negative": "Additional certifications could strengthen your application",
+    },
+    "backlog_penalty": {
+        "positive": "Your clean academic record is a plus",
+        "negative": "Academic backlogs may impact your candidacy",
+    },
+    "github_activity_score": {
+        "positive": "Your GitHub activity demonstrates practical coding skills",
+        "negative": "More open-source contributions could improve your profile",
+    },
+    "sbert_similarity": {
+        "positive": "Your profile deeply aligns with this job posting",
+        "negative": "Your profile and this job posting are conceptually distant",
     },
 }
 
@@ -61,6 +64,11 @@ class MatchExplainer:
     def __init__(self) -> None:
         self._explainer = None
         self._scorer = MatchScorer()
+
+    @property
+    def feature_names(self) -> list[str]:
+        """Return the active feature names from the scorer."""
+        return self._scorer._feature_names
 
     @property
     def explainer(self) -> shap.TreeExplainer | None:
@@ -74,15 +82,19 @@ class MatchExplainer:
     def _to_human_readable(self, feature: str, shap_val: float) -> str:
         templates = _FEATURE_TEMPLATES.get(feature, {})
         direction = "positive" if shap_val > 0 else "negative"
-        return templates.get(direction, f"{feature}: {'boosted' if shap_val > 0 else 'reduced'} your score")
+        return templates.get(
+            direction,
+            f"{feature}: {'boosted' if shap_val > 0 else 'reduced'} your score"
+        )
 
     def _fallback_explain(self, student: dict, job: dict, similarity: float) -> dict:
         """Feature-based explanation without SHAP when model is unavailable."""
         features = self._scorer.build_features(student, job, similarity)
+        names = self.feature_names
         # Use raw feature values as pseudo-importance
         shap_dict = {
             name: round(float(val), 4)
-            for name, val in zip(FEATURE_NAMES, features)
+            for name, val in zip(names, features)
         }
         sorted_features = sorted(shap_dict.items(), key=lambda x: abs(x[1]), reverse=True)
         top_reasons = [
@@ -114,6 +126,7 @@ class MatchExplainer:
         if not self._scorer.has_model or self.explainer is None:
             return self._fallback_explain(student, job, similarity)
 
+        names = self.feature_names
         features = self._scorer.build_features(student, job, similarity)
         features_2d = features.reshape(1, -1)
 
@@ -127,7 +140,7 @@ class MatchExplainer:
 
         shap_dict = {
             name: round(float(val), 4)
-            for name, val in zip(FEATURE_NAMES, sv)
+            for name, val in zip(names, sv)
         }
 
         # Sort by absolute contribution

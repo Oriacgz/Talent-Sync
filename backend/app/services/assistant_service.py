@@ -45,15 +45,14 @@ _PLEASANTRY_PATTERN = re.compile(
 )
 
 OFF_TOPIC_RESPONSE = (
-    "I'm your TalentSync Career Assistant — I can only help with "
-    "**jobs, internships, career guidance, and your professional journey.**\n\n"
-    "Here's what I can do:\n"
-    "• _\"Show my matches\"_ — see your top job matches\n"
-    "• _\"Show available jobs\"_ — browse open positions\n"
-    "• _\"How can I improve my resume?\"_ — get personalized tips\n"
-    "• _\"How do I get shortlisted faster?\"_ — actionable advice\n"
-    "• _\"Show my applications\"_ — track your applications\n\n"
-    "Ask me anything about your career! 🎯"
+    "I can only help with jobs, internships, career guidance, and your professional journey.\n\n"
+    "Here is what I can do:\n"
+    "- Show my matches\n"
+    "- Show available jobs\n"
+    "- How can I improve my resume?\n"
+    "- How do I get shortlisted faster?\n"
+    "- Show my applications\n\n"
+    "Ask me anything about your career."
 )
 
 

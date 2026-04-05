@@ -16,11 +16,11 @@ router = APIRouter(prefix="/recruiters", tags=["recruiters"])
 class UpdateRecruiterProfileRequest(BaseModel):
 	model_config = ConfigDict(populate_by_name=True, extra="ignore")
 
-	fullName: Optional[str] = Field(default=None, max_length=100)
-	companyName: Optional[str] = Field(default=None, max_length=200)
-	companyWebsite: Optional[str] = Field(default=None, max_length=500)
+	fullName: Optional[str] = Field(default=None, max_length=100, validation_alias="full_name")
+	companyName: Optional[str] = Field(default=None, max_length=200, validation_alias="company_name")
+	companyWebsite: Optional[str] = Field(default=None, max_length=500, validation_alias="company_website")
 	industry: Optional[str] = Field(default=None, max_length=100)
-	companySize: Optional[str] = Field(default=None, max_length=50)
+	companySize: Optional[str] = Field(default=None, max_length=50, validation_alias="company_size")
 	location: Optional[str] = Field(default=None, max_length=200)
 	bio: Optional[str] = Field(default=None, max_length=2000)
 

@@ -73,6 +73,35 @@ python -m prisma py generate --schema prisma/schema.prisma
 python -m prisma migrate deploy --schema prisma/schema.prisma
 ```
 
+### ML Setup (Important)
+
+**⚠️ REQUIRED TEAMMATE FILES:** Because GitHub correctly ignores large data and security files natively, you MUST manually drop the following files onto your laptop before running the ML scripts:
+1. Your `.env` files (Ask the repository owner for their local secrets).
+2. The exact 3 offline mock datasets placed strictly inside `ml_training/data/raw/`:
+    - `student_profiles.csv`
+    - `job_postings.csv`
+    - `match_outcomes.csv`
+
+Once those files are mapped, generate the machine learning engine mathematically on your laptop:
+
+```powershell
+cd C:\Talent-Sync\Talent-Sync\backend
+& .\.venv\Scripts\Activate.ps1
+$env:PATH = "$(Resolve-Path .\.venv\Scripts);$env:PATH"
+python -m scripts.preprocess_data
+python -m scripts.train_scorer
+```
+
+**What this ML process actually does:**
+1. `preprocess_data.py`: This merges the 3 raw CSVs and engineers 15 structured mathematical features. 
+   - **The Core Math:** It natively calculates **Cosine Similarity**. By tracking the angular distance between a Student's SBERT array and a Job's SBERT array, it builds a raw baseline Semantic Match limit (e.g., 85%). It then outputs the finalized `merged_dataset.csv`.
+2. `train_scorer.py`: This script leverages XGBoost Decision Trees to formally identify exactly which of those 15 features leads to accurate HR hirings based on history. It outputs three live API binaries into your `backend/app/ml/artifacts/` folder:
+    - `scorer_model.pkl`: The active XGBoost decision engine.
+    - `feature_scaler.pkl`: The system that compresses extreme outliers into a controlled `[0,1]` scale purely so attributes (like arbitrary Certification counts) don't dominate XGBoost.
+    - `feature_names.pkl`: Strict mappings preventing FastAPI bugs.
+
+*(Note: The system contains an ultimate Failsafe. If the XGBoost `.pkl` becomes corrupt or missing during a deployment, the backend silently catches the error and degrades cleanly to relying exclusively on the native **Cosine Similarity** percentage mapping to continue ranking jobs safely!)*
+
 Install frontend dependencies:
 
 ```powershell

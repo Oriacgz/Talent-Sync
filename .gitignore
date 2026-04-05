@@ -31,4 +31,15 @@ backend/prisma/*.pyi
 # Build artifacts / lint outputs
 lint.txt
 lint_results.json
-*.log
+*.log
+
+# ML artifacts
+*.pkl
+*.joblib
+*.npy
+backend/app/ml/artifacts/
+!backend/app/ml/artifacts/archive/.gitkeep
+
+# Data 
+ml_training/data/processed/*.csv
+ml_training/data/processed/*.npy

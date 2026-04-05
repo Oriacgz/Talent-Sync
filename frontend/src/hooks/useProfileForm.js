@@ -71,7 +71,7 @@ export function useProfileForm(toast) {
       }
 
       if (!data) {
-        setPersonal((prev) => ({
+        setPersonal((_prev) => ({
           ...INITIAL_PERSONAL,
           fullName: user?.name || '',
           email: user?.email || '',

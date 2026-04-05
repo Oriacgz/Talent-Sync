@@ -12,8 +12,10 @@ const mapStudentMatch = (row) => {
   const topReasons = Array.isArray(row.top_reasons) ? row.top_reasons : [];
   const scoreBreakdown = row.score_breakdown || {};
 
+  const rawScore = Number(row.final_score) || 0;
+
   return {
-    id: String(row.job_id || ""),
+    id: String(row.match_id || row.id || row.job_id || ""),
     jobId: String(row.job_id || ""),
     title: row.job_title || "",
     roleTitle: row.job_title || "",
@@ -24,8 +26,9 @@ const mapStudentMatch = (row) => {
     jobType: row.job_type || null,
     salaryMin: row.salary_min ?? null,
     salaryMax: row.salary_max ?? null,
-    score: Number(row.final_score) || 0,
-    finalScore: Number(row.final_score) || 0,
+    score: rawScore,
+    finalScore: rawScore,
+    displayScore: Math.round(rawScore * 100),
     similarityScore: Number(row.similarity_score) || 0,
     ruleScore: Number(row.ml_score) || 0,
     mlScore: Number(row.ml_score) || 0,
@@ -38,8 +41,8 @@ const mapStudentMatch = (row) => {
     },
     applied: Boolean(row.applied),
     rank: row.rank ?? null,
-    requiredSkills: [],
-    missingSkills: [],
+    requiredSkills: row.required_skills || row.requiredSkills || [],
+    missingSkills: row.missing_skills || row.missingSkills || [],
     explanation: topReasons.join(" | "),
   };
 };
@@ -55,11 +58,15 @@ const mapCandidate = (row) => {
     similarityScore: Number(row.similarity_score) || 0,
     topReasons: Array.isArray(row.top_reasons) ? row.top_reasons : [],
     shapValues: row.shap_values || {},
-    skills: [],
+    skills: row.skills || [],
+    email: row.email || "",
+    phone: row.phone || "",
+    branch: row.branch || "",
+    cgpa: row.cgpa || 0,
     status: "APPLIED",
     applicationId: null,
     college: null,
-    gpa: null,
+    gpa: row.cgpa || null,
   };
 };
 
@@ -72,11 +79,18 @@ export const matchService = {
   },
 
   getMatchDetail: async (matchId) => {
-    const id = String(matchId);
+    const id = String(matchId || "");
     if (!id) return null;
-    const list = await matchService.getMyMatches(50);
-    const found = list.find((item) => String(item?.id) === id || String(item?.jobId) === id);
-    return found || null;
+
+    try {
+      // Try dedicated endpoint first
+      const response = await apiClient.get(`/matches/${id}`);
+      return mapStudentMatch(response?.data);
+    } catch {
+      // Fallback: fetch larger list and find
+      const allMatches = await matchService.getMyMatches(50);
+      return allMatches.find((m) => m.id === id || m.jobId === id) || null;
+    }
   },
 
   getJobCandidates: async (jobId) => {
