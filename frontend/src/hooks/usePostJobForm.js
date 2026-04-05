@@ -17,6 +17,8 @@ const INITIAL_FORM = {
   deadline: '',
   perks: [],
   aboutCompany: '',
+  minCgpa: '',
+  eligibleBranches: [],
 }
 
 function validate(data) {
@@ -124,6 +126,8 @@ export function usePostJobForm() {
       deadline: formData.deadline,
       perks: formData.perks.length > 0 ? formData.perks : null,
       aboutCompany: formData.aboutCompany?.trim() || null,
+      minCgpa: formData.minCgpa ? Number(formData.minCgpa) : null,
+      eligibleBranches: formData.eligibleBranches.length > 0 ? formData.eligibleBranches : null,
     }
 
     try {

@@ -66,7 +66,6 @@ function FitBar({ label, pct }) {
 
 // Single match row card
 function MatchCard({ match, onApply, applyingId }) {
-  const navigate = useNavigate()
   const pct = Math.round((match.score || match.finalScore || 0) * 100)
   const isApplying = applyingId === (match.jobId || match.id)
 
@@ -136,7 +135,6 @@ export default function MatchesPage() {
   const setLoading = useMatchStore((state) => state.setLoading)
 
   const [applyingId, setApplyingId] = useState(null)
-  const [reloadTick, setReloadTick] = useState(0)
   const [profileIncomplete, setProfileIncomplete] = useState(false)
 
   useEffect(() => {
@@ -168,7 +166,7 @@ export default function MatchesPage() {
     }
     load()
     return () => { active = false }
-  }, [setLoading, setMatches, reloadTick])
+  }, [setLoading, setMatches])
 
   const sortedMatches = useMemo(
     () => [...matches].sort((a, b) => (Number(b.score || b.finalScore) || 0) - (Number(a.score || a.finalScore) || 0)),

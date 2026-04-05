@@ -36,6 +36,8 @@ class JobCreate(BaseModel):
     deadline: date
     perks: Optional[list[str]] = None
     aboutCompany: Optional[str] = None
+    minCgpa: Optional[float] = Field(default=None, ge=0, le=10)
+    eligibleBranches: Optional[list[str]] = None
 
     @field_validator("skills")
     @classmethod
@@ -84,6 +86,8 @@ class JobUpdate(BaseModel):
     deadline: Optional[date] = None
     perks: Optional[list[str]] = None
     aboutCompany: Optional[str] = None
+    minCgpa: Optional[float] = Field(default=None, ge=0, le=10)
+    eligibleBranches: Optional[list[str]] = None
 
     @field_validator("skills")
     @classmethod

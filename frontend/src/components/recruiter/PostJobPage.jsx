@@ -251,6 +251,51 @@ export default function PostJobPage() {
                     ))}
                   </select>
                 </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                  <div>
+                    <label htmlFor="post-job-min-cgpa" className={labelClass}>Min CGPA (0–10)</label>
+                    <input
+                      id="post-job-min-cgpa"
+                      type="number"
+                      step="0.1"
+                      min={0}
+                      max={10}
+                      value={formData.minCgpa}
+                      onChange={(e) => handleChange('minCgpa', e.target.value)}
+                      placeholder="e.g. 7.0"
+                      className={inputClass}
+                    />
+                  </div>
+
+                  <div>
+                    <label className={labelClass}>Eligible Branches</label>
+                    <div className="flex flex-wrap gap-2 mt-1">
+                      {['CS', 'IT', 'ECE', 'EEE', 'ME', 'CE', 'AIML', 'DS', 'Any'].map((br) => {
+                        const selected = formData.eligibleBranches.includes(br)
+                        return (
+                          <button
+                            key={br}
+                            type="button"
+                            onClick={() => {
+                              const next = selected
+                                ? formData.eligibleBranches.filter((b) => b !== br)
+                                : [...formData.eligibleBranches, br]
+                              handleChange('eligibleBranches', next)
+                            }}
+                            className={`rounded-md border px-3 py-1.5 text-[12px] font-semibold transition-colors cursor-pointer ${
+                              selected
+                                ? 'border-(--accent-yellow) bg-(--accent-yellow)/15 text-(--accent-yellow)'
+                                : 'border-(--border) bg-(--bg-base) text-(--text-secondary) hover:border-(--border-strong)'
+                            }`}
+                          >
+                            {br}
+                          </button>
+                        )
+                      })}
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
 

@@ -52,16 +52,26 @@ function formatSalary(min, max) {
 
 function computeCompletion(profile) {
   if (!profile) return { pct: 0, missing: [] };
+  // Handle both field name variants
+  const socialLinks = profile.socialLinks || {};
+  const linkedinUrl = profile.linkedinUrl || socialLinks.linkedinUrl || socialLinks.linkedin || '';
+  const githubUrl = profile.githubUrl || socialLinks.githubUrl || socialLinks.github || '';
+  const skills = Array.isArray(profile.skills)
+    ? profile.skills
+    : Array.isArray(profile.studentSkills)
+      ? profile.studentSkills
+      : [];
+
   const checks = [
     { label: "Full name",  done: !!profile.fullName },
     { label: "Bio",        done: !!profile.bio },
     { label: "College",    done: !!profile.college },
     { label: "Degree",     done: !!profile.degree },
+    { label: "Skills",     done: skills.length > 0 },
     { label: "Resume",     done: !!profile.resumeUrl },
-    { label: "LinkedIn",   done: !!profile.linkedinUrl },
-    { label: "GitHub",     done: !!profile.githubUrl },
+    { label: "LinkedIn",   done: !!linkedinUrl },
+    { label: "GitHub",     done: !!githubUrl },
     { label: "Location",   done: !!profile.location },
-    { label: "Skills",     done: !!(profile.studentSkills?.length > 0) },
   ];
   const done    = checks.filter(c => c.done).length;
   const missing = checks.filter(c => !c.done).map(c => c.label).slice(0, 3);
@@ -578,9 +588,9 @@ export default function StudentDashboard() {
         setAppliedIds(new Set(apps.map(a => a.jobId ?? a.job_id)));
         setAppStats({
           applied:     apps.filter(a => a.status === "APPLIED").length,
-          reviewed:    apps.filter(a => a.status === "SHORTLISTED").length,
+          reviewed:    apps.filter(a => a.status === "REVIEWED").length,
           shortlisted: apps.filter(a => a.status === "SHORTLISTED").length,
-          selected:    apps.filter(a => a.status === "HIRED").length,
+          selected:    apps.filter(a => a.status === "SELECTED").length,
         });
       }
     } catch {
