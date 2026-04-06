@@ -24,8 +24,24 @@ TOP_N_RETURN = 10   # return top N to API caller
 # ── Helpers ───────────────────────────────────────────────────────────────────
 
 
+import json
+
 def _text_hash(text: str) -> str:
     return hashlib.md5(text.encode()).hexdigest()
+
+def _profile_hash(student_dict: dict, text: str) -> str:
+    # Includes text ensuring semantic integrity + functional metadata integrity
+    data = {
+        "text": text, 
+        "skills": student_dict.get("skills", []),
+        "preferred_roles": student_dict.get("preferredRoles", []),
+        "cgpa": student_dict.get("cgpa", 0),
+        "backlogs": student_dict.get("backlogs", 0),
+        "branch": student_dict.get("branch", ""),
+        "experience": student_dict.get("experience_months", 0),
+        "locations": student_dict.get("preferredLocations", [])
+    }
+    return hashlib.md5(json.dumps(data, sort_keys=True).encode("utf-8")).hexdigest()
 
 
 def _profile_to_dict(profile, skills: list[str]) -> dict:
@@ -84,7 +100,7 @@ async def _get_student_embedding(
 ) -> np.ndarray:
     """Return cached embedding or encode fresh."""
     text = encoder._student_text(student_dict)
-    h = _text_hash(text)
+    h = _profile_hash(student_dict, text)
 
     cache = await prisma.embeddingcache.find_unique(where={"studentId": profile_id})
     if cache and cache.inputHash == h and cache.embedding:
@@ -225,8 +241,13 @@ async def run_matching_for_student(
                     "score_breakdown": {"ml_score": 0.0, "semantic_score": sim},
                 })
         else:
-            for j, j_dict, j_skills, j_emb, sim in top_k:
-                final_score = scorer.score(student_dict, j_dict, sim)
+            # Batch Inference Extraction
+            jobs_dicts = [j_dict for _, j_dict, _, _, _ in top_k]
+            similarities = [sim for _, _, _, _, sim in top_k]
+            final_scores, ml_scores = scorer.score_batch(student_dict, jobs_dicts, similarities)
+            
+            for i, (j, j_dict, j_skills, j_emb, sim) in enumerate(top_k):
+                final_score = final_scores[i]
                 
                 if is_cold_start:
                     final_score = (0.7 * sim) + (0.3 * final_score)
@@ -241,10 +262,10 @@ async def run_matching_for_student(
                     "missing_skills": missing,
                     "similarity_score": sim,
                     "final_score": round(final_score, 4),
-                    "ml_score": expl["score_breakdown"]["ml_score"],
+                    "ml_score": ml_scores[i],
                     "shap_values": expl["shap_values"],
                     "top_reasons": expl["top_reasons"],
-                    "score_breakdown": expl["score_breakdown"],
+                    "score_breakdown": {"ml_score": ml_scores[i], "semantic_score": sim, "final_score": round(final_score, 4)},
                 })
 
         # ── Stage 4: MMR Diversity Filter ──
