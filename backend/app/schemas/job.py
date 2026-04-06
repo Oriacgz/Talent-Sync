@@ -116,7 +116,7 @@ class JobResponse(BaseModel):
     id: str
     title: str
     description: str
-    skills: list[str] = []
+    skills: list[str] = Field(default_factory=list)
     experienceLevel: str
     education: str
     jobType: str
@@ -127,7 +127,7 @@ class JobResponse(BaseModel):
     duration: Optional[str] = None
     openings: int
     deadline: Optional[datetime] = None
-    perks: list[str] = []
+    perks: list[str] = Field(default_factory=list)
     aboutCompany: Optional[str] = None
     isActive: bool
     recruiterName: str = ""

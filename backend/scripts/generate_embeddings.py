@@ -13,7 +13,8 @@ import pandas as pd
 from pathlib import Path
 
 # Step 2: Use existing encoder
-sys.path.insert(0, 'backend')
+PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent
+sys.path.insert(0, str(PROJECT_ROOT / "backend"))
 from app.ml.encoder import ProfileEncoder
 
 RAW_DIR = Path("ml_training/data/raw")

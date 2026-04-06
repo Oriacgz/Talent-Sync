@@ -7,7 +7,6 @@
 # DEPENDS ON: chatbot_service, auth middleware, Prisma
 
 from fastapi import APIRouter, Depends, HTTPException, Query
-from prisma import Json
 
 from app.db.database import get_prisma
 from app.middleware.auth import get_current_user
@@ -119,23 +118,15 @@ async def list_sessions(
 async def reset_session(
     current_user: dict = Depends(get_current_user),
 ):
-    """Create a fresh chat session."""
-    prisma = get_prisma()
+    """Create a fresh chat session, respecting profile state."""
     user_id = current_user["id"]
 
-    session = await prisma.chatbotsession.create(
-        data={
-            "userId": user_id,
-            "messages": Json([]),
-            "onboardingStep": "GREETING",
-            "mode": "ONBOARDING",
-        },
-    )
-
-    # Send the greeting as the first message
+    # Send the greeting as the first message — get_or_create_session
+    # will automatically choose ONBOARDING or CAREER_ASSISTANT
+    # based on the user's profile completeness.
     result = await process_message(
         user_id=user_id,
         message="hi",
-        session_id=session.id,
+        session_id=None,  # Force new session
     )
     return ChatResponse(**result)
