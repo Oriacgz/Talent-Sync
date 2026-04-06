@@ -18,38 +18,16 @@ import logging
 import json
 import joblib
 import numpy as np
+import xgboost as xgb
+
+from app.ml.feature_builder import build_features, SAFE_FEATURES
 
 ARTIFACTS_DIR = Path(__file__).parent / "artifacts"
 logger = logging.getLogger(__name__)
 
 # These MUST match the training feature order exactly.
 # Loaded dynamically when the model file is present.
-_DEFAULT_FEATURES = [
-    # Semantic signals
-    "sbert_similarity",
-    "semantic_score",
-    "skill_overlap_ratio",
-    
-    # Academic / Eligibility
-    "cgpa_normalized",
-    "cgpa_meets_threshold",
-    "backlog_penalty",
-    "branch_eligible",
-    
-    # Experience signals
-    "experience_score",
-    "experience_months",
-    "experience_gap",
-    
-    # Preference signals
-    "preference_score",
-    "location_match",
-    "domain_match",
-    
-    # Profile quality signals
-    "skill_gap_score",
-    "profile_completeness",
-]
+_DEFAULT_FEATURES = SAFE_FEATURES
 
 # Weight: 70% semantic similarity + 30% ML model score
 SIMILARITY_WEIGHT = 0.7
@@ -129,106 +107,8 @@ class MatchScorer:
         job: dict,
         similarity: float,
     ) -> np.ndarray:
-        """Build feature vector matching the trained model's SAFE_FEATURES order."""
-
-        # --- skill_overlap_ratio & skill_gap_score ---
-        s_skills = set(s.lower() for s in (student.get("skills") or []))
-        j_skills = set(s.lower() for s in (job.get("skills") or job.get("required_skills") or []))
-        overlap = s_skills & j_skills
-        skill_gap = len(overlap) / max(len(j_skills), 1)
-        skill_overlap_ratio = skill_gap
-
-        # --- preference_score ---
-        preferred_roles = [r.lower() for r in (student.get("preferredRoles") or student.get("preferred_roles") or [])]
-        job_title = (job.get("title") or job.get("role_title") or "").lower()
-        role_match = float(any(role in job_title or job_title in role for role in preferred_roles))
-
-        pref_locs = [l.lower() for l in (student.get("preferredLocations") or student.get("preferred_locations") or [])]
-        job_loc = (job.get("location") or "").lower()
-        if not job_loc: location_match = 1.0
-        elif job_loc in pref_locs: location_match = 1.0
-        elif "remote" in [l.lower() for l in pref_locs]: location_match = 0.5
-        else: location_match = 0.0
-        pref_score = (role_match + location_match) / 2.0
-
-        # --- domain_match ---
-        def extract_domain(title_str):
-            t = str(title_str).lower()
-            if "frontend" in t or "react" in t: return "frontend"
-            if "backend" in t: return "backend"
-            if "data" in t or "ml" in t: return "data"
-            if "devops" in t: return "devops"
-            return "general"
-        
-        job_domain = extract_domain(job_title)
-        student_domain_roles = " ".join(preferred_roles)
-        student_domain = extract_domain(student_domain_roles)
-        domain_match = float(job_domain == student_domain)
-
-        # --- academic_score & cgpa ---
-        cgpa = float(student.get("cgpa") or student.get("gpa") or 0)
-        min_cgpa = float(job.get("minCgpa") or job.get("min_cgpa") or job.get("min_gpa") or 0)
-        cgpa_meets_threshold = float(cgpa >= min_cgpa)
-        cgpa_normalized = cgpa / 10.0
-
-        backlogs = int(student.get("backlogs") or 0)
-        backlog_allowed = int(job.get("backlogAllowed") or job.get("backlog_allowed") or 0)
-        excess_backlogs = max(0, backlogs - backlog_allowed)
-        backlog_penalty = float(-0.1 * excess_backlogs)  # negative = penalty
-        
-        # Branch eligibility
-        s_branch = str(student.get("branch") or "").strip().lower()
-        eligible_branches = job.get("eligibleBranches") or job.get("eligible_branches") or []
-        if isinstance(eligible_branches, str):
-            eligible_branches = [eligible_branches]
-        if not eligible_branches:
-            branch_eligible = 1.0
-        else:
-            eb_tokens = {str(b).strip().lower() for b in eligible_branches if str(b).strip()}
-            branch_eligible = 1.0 if s_branch in eb_tokens else 0.0
-
-        # --- experience ---
-        s_exp_months = float(student.get("experience_months") or 0)
-        req_exp = float(job.get("requiredExperienceMonths") or job.get("required_experience_months") or 0)
-        exp_score = 1.0 if s_exp_months >= req_exp else (s_exp_months / max(req_exp, 1))
-        experience_gap = max(0.0, req_exp - s_exp_months) / max(req_exp, 1.0)
-        
-        # --- profile completeness ---
-        completeness_points = 0
-        if student.get("bio"): completeness_points += 1
-        if student.get("resume"): completeness_points += 1
-        if student.get("github"): completeness_points += 1
-        if student.get("linkedin"): completeness_points += 1
-        if len(s_skills) >= 3: completeness_points += 1
-        if cgpa > 0: completeness_points += 1
-        profile_completeness = completeness_points / 6.0
-
-        # Build in EXACT feature order:
-        features = np.array(
-            [
-                float(similarity),      # sbert_similarity
-                float(similarity),      # semantic_score (can map directly in fallback)
-                skill_overlap_ratio,    # skill_overlap_ratio
-                
-                cgpa_normalized,        # cgpa_normalized
-                cgpa_meets_threshold,   # cgpa_meets_threshold
-                backlog_penalty,        # backlog_penalty
-                branch_eligible,        # branch_eligible
-                
-                exp_score,              # experience_score
-                s_exp_months,           # experience_months
-                experience_gap,         # experience_gap
-                
-                pref_score,             # preference_score
-                location_match,         # location_match
-                domain_match,           # domain_match
-                
-                skill_gap,              # skill_gap_score
-                profile_completeness,   # profile_completeness
-            ],
-            dtype=np.float32,
-        )
-        return features
+        """Build feature vector using shared Feature Builder."""
+        return build_features(student, job, similarity)
 
     # ── Scoring ───────────────────────────────────────────────────────────────
 
@@ -243,15 +123,13 @@ class MatchScorer:
             # Fallback: use pure cosine similarity
             return round(min(max(similarity, 0.0), 1.0), 4)
 
-        features = self.build_features(student, job, similarity)
+        features = self.build_features(student, job, similarity).reshape(1, -1)
         
         # Ensure scaling if scaler exists
         if self.scaler is not None:
-            features_scaled = self.scaler.transform([features])
-        else:
-            features_scaled = [features]
+            features = self.scaler.transform(features)
             
-        ml_score = float(self.model.predict_proba(features_scaled)[0][1])
+        ml_score = float(self.model.predict_proba(features)[0][1])
         final = SIMILARITY_WEIGHT * similarity + ML_WEIGHT * ml_score
         return round(min(max(final, 0.0), 1.0), 4)
 
@@ -260,30 +138,27 @@ class MatchScorer:
         student: dict,
         jobs: list[dict],
         similarities: list[float],
-    ) -> list[float]:
-        """Score one student against multiple jobs efficiently."""
-        if not jobs:
-            return []
+    ) -> tuple[list[float], list[float]]:
+        """Score batch of jobs. Returns (final_scores, ml_scores)."""
+        if not self.has_model or self.model is None or not jobs:
+            final_scores = [round(min(max(sim, 0.0), 1.0), 4) for sim in similarities]
+            return final_scores, [0.0] * len(jobs)
 
-        if not self.has_model or self.model is None:
-            # Fallback: use pure cosine similarity
-            return [round(min(max(s, 0.0), 1.0), 4) for s in similarities]
+        # Assemble numpy matrix
+        feature_matrix = np.array([
+            self.build_features(student, j, sim)
+            for j, sim in zip(jobs, similarities)
+        ], dtype=np.float32)
 
-        feature_matrix = np.array(
-            [
-                self.build_features(student, job, sim)
-                for job, sim in zip(jobs, similarities)
-            ],
-            dtype=np.float32,
-        )
-        
         # Ensure scaling
         if self.scaler is not None:
             feature_matrix = self.scaler.transform(feature_matrix)
             
         ml_scores = self.model.predict_proba(feature_matrix)[:, 1]
-        finals = [
-            round(min(max(SIMILARITY_WEIGHT * sim + ML_WEIGHT * float(ml), 0.0), 1.0), 4)
-            for sim, ml in zip(similarities, ml_scores)
-        ]
-        return finals
+
+        final_scores = []
+        for i, ml_score in enumerate(ml_scores):
+            f_score = (SIMILARITY_WEIGHT * similarities[i]) + (ML_WEIGHT * float(ml_score))
+            final_scores.append(round(min(max(f_score, 0.0), 1.0), 4))
+
+        return final_scores, ml_scores.tolist()

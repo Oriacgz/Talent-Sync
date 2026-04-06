@@ -97,90 +97,7 @@ def main() -> None:
 
     # ── Step 2: Feature engineering ──────────────────────────────────────────
     print("\n🔧 Engineering features...")
-
-    # Derived: cgpa_normalized (gpa / 10)
-    df["cgpa_normalized"] = df["gpa"].fillna(0) / 10.0
-
-    # 1. skill_overlap_ratio
-    def calc_overlap(s_val, j_val):
-        s = set(x.strip().lower() for x in str(s_val).split("|") if x.strip()) if pd.notna(s_val) else set()
-        j = set(x.strip().lower() for x in str(j_val).split("|") if x.strip()) if pd.notna(j_val) else set()
-        return len(s & j) / max(len(j), 1)
-    df["skill_overlap_ratio"] = df.apply(lambda row: calc_overlap(row.get("skills"), row.get("required_skills")), axis=1)
-
-    # 2. cgpa_meets_threshold
-    min_gpa_col = "min_gpa" if "min_gpa" in df.columns else "minCgpa"
-    df["cgpa_meets_threshold"] = (df["gpa"].fillna(0) >= df.get(min_gpa_col, pd.Series([0]*len(df))).fillna(0)).astype(float)
-
-    # 3. branch_eligible
-    def is_branch_eligible(branch, eligible):
-        if pd.isna(eligible) or str(eligible).strip() == "":
-            return 1.0
-        normalized_branch = str(branch).strip().lower()
-        eligible_tokens = {
-            tok.strip().lower()
-            for tok in str(eligible).split("|")
-            if tok.strip()
-        }
-        return 1.0 if normalized_branch in eligible_tokens else 0.0
-    df["branch_eligible"] = df.apply(lambda row: is_branch_eligible(row.get("branch"), row.get("eligible_branches") or row.get("eligibleBranches")), axis=1)
-
-    # 4. experience_gap
-    req_exp_col = "required_experience_months" if "required_experience_months" in df.columns else "requiredExperienceMonths"
-    req_exp = df.get(req_exp_col, pd.Series([0]*len(df))).fillna(0)
-    exp = df["experience_months"].fillna(0)
-    df["experience_gap"] = np.maximum(0, req_exp - exp) / np.maximum(req_exp, 1)
-
-    # 5. location_match
-    def loc_match(pref, job_loc):
-        pref_str = str(pref).lower()
-        job_str = str(job_loc).lower()
-        if pd.isna(job_loc) or job_str == "": return 1.0
-        if job_str in pref_str: return 1.0
-        if "remote" in pref_str: return 0.5
-        return 0.0
-    df["location_match"] = df.apply(lambda row: loc_match(row.get("preferred_locations") or row.get("preferredLocations"), row.get("location")), axis=1)
-
-    # 6. domain_match
-    def extract_domain(title):
-        t = str(title).lower()
-        if "frontend" in t or "react" in t: return "frontend"
-        if "backend" in t: return "backend"
-        if "data" in t or "ml" in t: return "data"
-        if "devops" in t: return "devops"
-        return "general"
-    
-    # Use role_title as fallback for title column (merged CSV may use either)
-    job_title_col = None
-    for col_name in ["title", "role_title"]:
-        if col_name in df.columns:
-            job_title_col = col_name
-            break
-    df["job_domain"] = df[job_title_col].fillna("").apply(extract_domain) if job_title_col else pd.Series(["general"]*len(df))
-
-    pref_roles_col = None
-    for col_name in ["preferred_roles", "preferredRoles"]:
-        if col_name in df.columns:
-            pref_roles_col = col_name
-            break
-    pref_roles = df[pref_roles_col].fillna("") if pref_roles_col else pd.Series([""]*len(df))
-    df["student_domain"] = pref_roles.apply(extract_domain)
-    df["domain_match"] = (df["job_domain"] == df["student_domain"]).astype(float)
-
-    # 7. profile_completeness
-    def completeness(row):
-        score = 0
-        if pd.notna(row.get("bio")) and str(row.get("bio")).strip() != "": score += 1
-        if pd.notna(row.get("resume")) and str(row.get("resume")).strip() != "": score += 1
-        if pd.notna(row.get("github")) and str(row.get("github")).strip() != "": score += 1
-        if pd.notna(row.get("linkedin")) and str(row.get("linkedin")).strip() != "": score += 1
-        s = set(x for x in str(row.get("skills", "")).split("|") if x.strip())
-        if len(s) >= 3: score += 1
-        if pd.notna(row.get("gpa")) and row.get("gpa") > 0: score += 1
-        return score / 6.0
-    df["profile_completeness"] = df.apply(completeness, axis=1)
-
-    # ── Step 2b: Add SBERT cosine similarity from saved embeddings ────────
+    # ── Step 2: Compute Embeddings First ─────────────────────────────────────
     emb_student_path = ARTIFACTS / "student_embeddings.npy"
     emb_job_path     = ARTIFACTS / "job_embeddings.npy"
     sid_map_path     = ARTIFACTS / "student_id_map.json"
@@ -195,7 +112,6 @@ def main() -> None:
         with open(jid_map_path) as f:
             job_id_map = json.load(f)
 
-        # Vectorised similarity computation for 100k rows
         s_indices = df["student_id"].map(student_id_map).values
         j_indices = df["job_id"].map(job_id_map).values
 
@@ -205,20 +121,28 @@ def main() -> None:
         dot   = np.sum(s_vecs * j_vecs, axis=1)
         norms = norm(s_vecs, axis=1) * norm(j_vecs, axis=1) + 1e-8
         df["sbert_similarity"] = np.clip(dot / norms, 0.0, 1.0)
-
-        print(f"   SBERT similarity — mean: {df['sbert_similarity'].mean():.4f}, "
-              f"std: {df['sbert_similarity'].std():.4f}")
     else:
         print("   ⚠ Embedding artifacts missing — skipping sbert_similarity.")
         df["sbert_similarity"] = 0.0
 
-    # Sanity: assert no leakage features snuck in
-    active_features = [f for f in SAFE_FEATURES if f in df.columns]
-    leaked = set(active_features) & LEAKAGE_GUARD
-    if leaked:
-        raise RuntimeError(f"🚨 LEAKAGE: {leaked} found in feature list!")
+    # ── Step 2b: Apply shared Feature Builder   ──────────────────────────────
+    print("   Applying central feature_builder.py...")
+    from app.ml.feature_builder import build_features  # dynamic import ensures no circular dependency
 
-    print(f"   Active features ({len(active_features)}): {active_features}")
+    features_list = []
+    for idx, row in df.iterrows():
+        # Pass dictionaries exactly as API would
+        row_dict = row.to_dict()
+        f = build_features(student=row_dict, job=row_dict, similarity=row["sbert_similarity"])
+        features_list.append(f)
+
+    # Reconstruct DF exactly over the SAFE_FEATURES bounds
+    feature_matrix = np.vstack(features_list)
+    df_features = pd.DataFrame(feature_matrix, columns=SAFE_FEATURES)
+    for col in SAFE_FEATURES:
+        df[col] = df_features[col]
+    
+    active_features = SAFE_FEATURES
 
     # ── Step 3: Prepare X / y with class imbalance handling ──────────────────
     X = df[active_features].fillna(0).astype(np.float32)
