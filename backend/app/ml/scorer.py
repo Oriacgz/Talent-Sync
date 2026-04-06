@@ -2,6 +2,12 @@
 backend/app/ml/scorer.py
 Loads trained XGBoost model and scores student-job pairs.
 Falls back to similarity-only scoring when model is absent.
+
+Feature contract (must match train_scorer.py SAFE_FEATURES):
+    semantic_score, academic_score, preference_score, experience_score,
+    skill_gap_score, cgpa_normalized, experience_months,
+    certification_bonus, backlog_penalty, github_activity_score,
+    sbert_similarity
 """
 
 from __future__ import annotations
@@ -9,24 +15,19 @@ from __future__ import annotations
 from pathlib import Path
 
 import logging
-import joblib
 import json
+import joblib
 import numpy as np
+import xgboost as xgb
+
+from app.ml.feature_builder import build_features, SAFE_FEATURES
 
 ARTIFACTS_DIR = Path(__file__).parent / "artifacts"
 logger = logging.getLogger(__name__)
 
-FEATURE_NAMES = [
-    "cosine_similarity",
-    "skill_overlap_count",
-    "skill_overlap_ratio",
-    "cgpa_meets_requirement",
-    "branch_eligible",
-    "experience_match",
-    "role_match",
-    "location_match",
-    "education_match",
-]
+# These MUST match the training feature order exactly.
+# Loaded dynamically when the model file is present.
+_DEFAULT_FEATURES = SAFE_FEATURES
 
 # Weight: 70% semantic similarity + 30% ML model score
 SIMILARITY_WEIGHT = 0.7
@@ -37,32 +38,66 @@ class MatchScorer:
 
     def __init__(self) -> None:
         self._model = None
+        self._scaler = None
         self._model_available: bool | None = None
-        self._feature_names: list[str] = FEATURE_NAMES
+        self._feature_names: list[str] = _DEFAULT_FEATURES
 
     @property
     def has_model(self) -> bool:
         """Check if the trained model file exists."""
         if self._model_available is None:
-            self._model_available = (ARTIFACTS_DIR / "scorer_model.joblib").exists()
+            # Try .pkl first (new), fall back to .joblib (legacy)
+            self._model_available = (
+                (ARTIFACTS_DIR / "scorer_model.pkl").exists()
+                or (ARTIFACTS_DIR / "scorer_model.joblib").exists()
+            )
             if not self._model_available:
                 logger.warning(
                     "Scorer model not found at %s. "
                     "Using similarity-only fallback. "
                     "Run: python -m scripts.train_scorer to train the model.",
-                    ARTIFACTS_DIR / "scorer_model.joblib",
+                    ARTIFACTS_DIR,
                 )
         return self._model_available
 
     @property
     def model(self):
         if self._model is None:
-            model_path = ARTIFACTS_DIR / "scorer_model.joblib"
+            # Try .pkl first, fall back to .joblib
+            pkl_path = ARTIFACTS_DIR / "scorer_model.pkl"
+            joblib_path = ARTIFACTS_DIR / "scorer_model.joblib"
+            model_path = pkl_path if pkl_path.exists() else joblib_path
+
+            scaler_path = ARTIFACTS_DIR / "feature_scaler.pkl"
+
             if not model_path.exists():
                 return None
-            self._model = joblib.load(model_path)
-            self._model_available = True
+                
+            try:
+                self._model = joblib.load(model_path)
+                
+                if scaler_path.exists():
+                    self._scaler = joblib.load(scaler_path)
+                    
+                self._model_available = True
+
+                # Load feature names if available
+                fn_path = ARTIFACTS_DIR / "feature_names.json"
+                if fn_path.exists():
+                    self._feature_names = json.loads(fn_path.read_text())
+            except Exception as e:
+                logger.error("Failed to load ML artifacts (corrupted files). Falling back to similarity. Error: %s", e)
+                self._model = None
+                self._scaler = None
+                self._model_available = False
+                
         return self._model
+        
+    @property
+    def scaler(self):
+        if self._scaler is None:
+            self.model  # Trigger loading
+        return self._scaler
 
     # ── Feature builder ───────────────────────────────────────────────────────
 
@@ -72,76 +107,8 @@ class MatchScorer:
         job: dict,
         similarity: float,
     ) -> np.ndarray:
-        """Build feature vector. MUST match training feature order."""
-
-        # Normalize skill keys (DB uses camelCase, scripts use snake_case)
-        s_skills = set(
-            s.lower() for s in (
-                student.get("skills") or []
-            )
-        )
-        j_skills = set(
-            s.lower() for s in (
-                job.get("skills") or job.get("required_skills") or []
-            )
-        )
-
-        overlap = s_skills & j_skills
-        skill_count = float(len(overlap))
-        skill_ratio = len(overlap) / max(len(s_skills), 1)
-
-        cgpa = float(student.get("cgpa") or 0)
-        min_cgpa = float(job.get("minCgpa") or job.get("min_cgpa") or 0)
-        cgpa_ok = float(cgpa >= min_cgpa)
-
-        eligible_branches = (
-            job.get("eligibleBranches") or job.get("eligible_branches") or []
-        )
-        education_req = job.get("education", "Any")
-        branch_ok = float(
-            education_req == "Any"
-            or student.get("branch", "") in eligible_branches
-        )
-
-        s_exp = student.get("experienceLevel") or student.get("experience_level") or ""
-        j_exp = job.get("experienceLevel") or job.get("experience_level") or ""
-        exp_match = float(s_exp == j_exp)
-
-        preferred_roles = [
-            r.lower() for r in (student.get("preferredRoles") or student.get("preferred_roles") or [])
-        ]
-        job_title = (job.get("title") or "").lower()
-        role_match = float(
-            any(role in job_title or job_title in role for role in preferred_roles)
-        )
-
-        pref_locs = [
-            l.lower() for l in (
-                student.get("preferredLocations") or student.get("preferred_locations") or []
-            )
-        ]
-        job_loc = (job.get("location") or "").lower()
-        loc_match = float(job_loc in pref_locs or "remote" in pref_locs)
-
-        s_degree = (student.get("degree") or "").lower()
-        edu_match = float(
-            education_req == "Any" or s_degree in education_req.lower()
-        )
-
-        return np.array(
-            [
-                float(similarity),
-                skill_count,
-                skill_ratio,
-                cgpa_ok,
-                branch_ok,
-                exp_match,
-                role_match,
-                loc_match,
-                edu_match,
-            ],
-            dtype=np.float32,
-        )
+        """Build feature vector using shared Feature Builder."""
+        return build_features(student, job, similarity)
 
     # ── Scoring ───────────────────────────────────────────────────────────────
 
@@ -156,8 +123,13 @@ class MatchScorer:
             # Fallback: use pure cosine similarity
             return round(min(max(similarity, 0.0), 1.0), 4)
 
-        features = self.build_features(student, job, similarity)
-        ml_score = float(self.model.predict_proba([features])[0][1])
+        features = self.build_features(student, job, similarity).reshape(1, -1)
+        
+        # Ensure scaling if scaler exists
+        if self.scaler is not None:
+            features = self.scaler.transform(features)
+            
+        ml_score = float(self.model.predict_proba(features)[0][1])
         final = SIMILARITY_WEIGHT * similarity + ML_WEIGHT * ml_score
         return round(min(max(final, 0.0), 1.0), 4)
 
@@ -166,25 +138,27 @@ class MatchScorer:
         student: dict,
         jobs: list[dict],
         similarities: list[float],
-    ) -> list[float]:
-        """Score one student against multiple jobs efficiently."""
-        if not jobs:
-            return []
+    ) -> tuple[list[float], list[float]]:
+        """Score batch of jobs. Returns (final_scores, ml_scores)."""
+        if not self.has_model or self.model is None or not jobs:
+            final_scores = [round(min(max(sim, 0.0), 1.0), 4) for sim in similarities]
+            return final_scores, [0.0] * len(jobs)
 
-        if not self.has_model or self.model is None:
-            # Fallback: use pure cosine similarity
-            return [round(min(max(s, 0.0), 1.0), 4) for s in similarities]
+        # Assemble numpy matrix
+        feature_matrix = np.array([
+            self.build_features(student, j, sim)
+            for j, sim in zip(jobs, similarities)
+        ], dtype=np.float32)
 
-        feature_matrix = np.array(
-            [
-                self.build_features(student, job, sim)
-                for job, sim in zip(jobs, similarities)
-            ],
-            dtype=np.float32,
-        )
+        # Ensure scaling
+        if self.scaler is not None:
+            feature_matrix = self.scaler.transform(feature_matrix)
+            
         ml_scores = self.model.predict_proba(feature_matrix)[:, 1]
-        finals = [
-            round(min(max(SIMILARITY_WEIGHT * sim + ML_WEIGHT * float(ml), 0.0), 1.0), 4)
-            for sim, ml in zip(similarities, ml_scores)
-        ]
-        return finals
+
+        final_scores = []
+        for i, ml_score in enumerate(ml_scores):
+            f_score = (SIMILARITY_WEIGHT * similarities[i]) + (ML_WEIGHT * float(ml_score))
+            final_scores.append(round(min(max(f_score, 0.0), 1.0), 4))
+
+        return final_scores, ml_scores.tolist()

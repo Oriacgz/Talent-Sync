@@ -6,9 +6,8 @@
 import logging
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI, Request
+from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
 from slowapi import _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
 
@@ -26,11 +25,10 @@ logger = logging.getLogger(__name__)
 async def lifespan(app: FastAPI):
     """Startup/shutdown lifecycle — replaces deprecated on_event."""
     await prisma.connect()
-    # Pre-load SBERT model so first request isn't slow
+    # Pre-load SBERT model using the singleton so first request isn't slow
     try:
-        from app.ml.encoder import ProfileEncoder
-        _encoder = ProfileEncoder()
-        _ = _encoder.model  # triggers lazy download/load
+        from app.ml import encoder
+        _ = encoder.model  # triggers lazy download/load on the shared singleton
         logger.info("SBERT model loaded successfully")
     except Exception:
         logger.warning("SBERT model could not be pre-loaded (matching will load on demand)")

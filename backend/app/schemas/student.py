@@ -76,17 +76,17 @@ class StudentProfileResponse(BaseModel):
     phone: str | None = None
     address: str | None = None
 
-    preferredRoles: list[str] = []
-    preferredLocations: list[str] = []
+    preferredRoles: list[str] = Field(default_factory=list)
+    preferredLocations: list[str] = Field(default_factory=list)
     experienceLevel: str | None = None
-    socialLinks: list[str] = []
+    socialLinks: list[str] = Field(default_factory=list)
 
     resume: dict[str, Any] | str | None = None
     resumeUrl: str | None = None
     resumePublic: bool = True
 
     certificationsPublic: bool = True
-    certificates: list[StudentCertificationResponse] = []
+    certificates: list[StudentCertificationResponse] = Field(default_factory=list)
 
-    skills: list[str] = []
+    skills: list[str] = Field(default_factory=list)
     profileCompletion: int = 0

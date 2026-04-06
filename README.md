@@ -73,6 +73,35 @@ python -m prisma py generate --schema prisma/schema.prisma
 python -m prisma migrate deploy --schema prisma/schema.prisma
 ```
 
+### ML Setup (Important)
+
+**⚠️ REQUIRED FILES (not tracked by Git):**
+1. Create your own `backend/.env` from `backend/.env.example` and fill in your local values.
+   Do NOT copy another developer's `.env` directly — use the team's shared password manager or ask for specific values securely.
+2. Obtain the 3 raw mock datasets from the team's internal source and place them in `ml_training/data/raw/`:
+    - `student_profiles.csv`
+    - `job_postings.csv`
+    - `match_outcomes.csv`
+
+Once those files are in place, generate the ML engine locally:
+
+```powershell
+cd C:\Talent-Sync\Talent-Sync\backend
+& .\.venv\Scripts\Activate.ps1
+$env:PATH = "$(Resolve-Path .\.venv\Scripts);$env:PATH"
+python -m scripts.preprocess_data
+python -m scripts.train_scorer
+```
+
+**What this ML process actually does:**
+1. `preprocess_data.py`: Merges the 3 raw CSVs on student_id/job_id and engineers 15 features (skill_overlap_ratio, cgpa_normalized, branch_eligible, etc.). Outputs a cleaned `ml_training/data/processed/merged_dataset.csv`.
+2. `train_scorer.py`: Trains XGBoost Decision Trees on those 15 features to predict which student-job pairs lead to successful hires. Outputs three live binaries into `backend/app/ml/artifacts/`:
+    - `scorer_model.pkl`: The active XGBoost decision engine.
+    - `feature_scaler.pkl`: MinMaxScaler that compresses all feature values into a controlled `[0,1]` range so no single attribute dominates the model.
+    - `feature_names.pkl`: Strict ordered feature list preventing training-inference mismatch.
+
+*(Failsafe: If the `.pkl` files are missing or corrupt, the backend catches the error and degrades to pure Cosine Similarity ranking. The system never crashes.)*
+
 Install frontend dependencies:
 
 ```powershell

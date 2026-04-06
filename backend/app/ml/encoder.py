@@ -25,14 +25,22 @@ class ProfileEncoder:
     # ── Text builders ─────────────────────────────────────────────────────────
 
     def _student_text(self, profile: dict) -> str:
-        skills = ", ".join(profile.get("skills", []))
-        roles = ", ".join(profile.get("preferred_roles", []))
-        locations = ", ".join(profile.get("preferred_locations", []))
+        # Handle both camelCase and snake_case keys
+        skills_raw = profile.get("skills") or []
+        skills = ", ".join(skills_raw) if isinstance(skills_raw, list) else str(skills_raw)
+        
+        exp = profile.get('experience_level') or profile.get('experienceLevel') or ''
+        roles_raw = profile.get('preferred_roles') or profile.get('preferredRoles') or []
+        roles = ", ".join(roles_raw) if isinstance(roles_raw, list) else str(roles_raw)
+        
+        locations_raw = profile.get('preferred_locations') or profile.get('preferredLocations') or []
+        locations = ", ".join(locations_raw) if isinstance(locations_raw, list) else str(locations_raw)
+        
         return (
             f"Skills: {skills}. "
             f"Degree: {profile.get('degree', '')} {profile.get('branch', '')}. "
             f"Roles: {roles}. "
-            f"Experience: {profile.get('experience_level', '')}. "
+            f"Experience: {exp}. "
             f"Location: {locations}."
         )
 
@@ -66,8 +74,9 @@ class ProfileEncoder:
 
     @staticmethod
     def cosine_similarity(vec1: np.ndarray, vec2: np.ndarray) -> float:
-        """Cosine similarity between two vectors. Returns float 0–1."""
+        """Cosine similarity clamped to [0, 1]."""
         denom = np.linalg.norm(vec1) * np.linalg.norm(vec2)
         if denom < 1e-8:
             return 0.0
-        return float(np.dot(vec1, vec2) / denom)
+        similarity = float(np.dot(vec1, vec2) / denom)
+        return float(np.clip(similarity, 0.0, 1.0))

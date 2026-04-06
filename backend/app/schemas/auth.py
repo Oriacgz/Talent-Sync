@@ -20,13 +20,19 @@ class RegisterRequest(BaseModel):
         if not re.search(r"\d", v):
             raise ValueError("Password must contain at least one digit")
         return v
+
+
 class LoginRequest(BaseModel):
     email: EmailStr
     password: str
+
+
 class TokenResponse(BaseModel):
     access_token: str
     refresh_token: str
     token_type: str = "bearer"
     user: dict
+
+
 class RefreshRequest(BaseModel):
     refresh_token: str
