@@ -172,18 +172,20 @@ class MatchScorer:
         cgpa_normalized = cgpa / 10.0
 
         backlogs = int(student.get("backlogs") or 0)
-        backlog_penalty = float(backlogs * 0.1)  # simple fallback if not in dict
+        backlog_allowed = int(job.get("backlogAllowed") or job.get("backlog_allowed") or 0)
+        excess_backlogs = max(0, backlogs - backlog_allowed)
+        backlog_penalty = float(-0.1 * excess_backlogs)  # negative = penalty
         
         # Branch eligibility
-        s_branch = str(student.get("branch") or "").lower()
+        s_branch = str(student.get("branch") or "").strip().lower()
         eligible_branches = job.get("eligibleBranches") or job.get("eligible_branches") or []
         if isinstance(eligible_branches, str):
             eligible_branches = [eligible_branches]
         if not eligible_branches:
             branch_eligible = 1.0
         else:
-            eb_lower = " ".join([str(b).lower() for b in eligible_branches])
-            branch_eligible = 1.0 if s_branch in eb_lower else 0.0
+            eb_tokens = {str(b).strip().lower() for b in eligible_branches if str(b).strip()}
+            branch_eligible = 1.0 if s_branch in eb_tokens else 0.0
 
         # --- experience ---
         s_exp_months = float(student.get("experience_months") or 0)

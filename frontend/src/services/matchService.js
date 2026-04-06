@@ -82,15 +82,10 @@ export const matchService = {
     const id = String(matchId || "");
     if (!id) return null;
 
-    try {
-      // Try dedicated endpoint first
-      const response = await apiClient.get(`/matches/${id}`);
-      return mapStudentMatch(response?.data);
-    } catch {
-      // Fallback: fetch larger list and find
-      const allMatches = await matchService.getMyMatches(50);
-      return allMatches.find((m) => m.id === id || m.jobId === id) || null;
-    }
+    // No dedicated GET /matches/:id endpoint exists.
+    // Fetch the full list and find by ID.
+    const allMatches = await matchService.getMyMatches(50);
+    return allMatches.find((m) => m.id === id || m.jobId === id) || null;
   },
 
   getJobCandidates: async (jobId) => {

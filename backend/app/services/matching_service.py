@@ -22,11 +22,7 @@ TOP_N_RETURN = 10   # return top N to API caller
 
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
-import signal
-from concurrent.futures import TimeoutError
 
-def _timeout_handler(signum, frame):
-    raise TimeoutError("Matching pipeline timed out")
 
 def _text_hash(text: str) -> str:
     return hashlib.md5(text.encode()).hexdigest()
@@ -152,10 +148,6 @@ async def run_matching_for_student(
     Returns top 10 matches with scores + explanations.
     Uses 4-Stage Pipeline: Eligibility Gate -> Retrieval -> Re-ranking -> Diversity
     """
-    if hasattr(signal, "SIGALRM"):
-        signal.signal(signal.SIGALRM, _timeout_handler)
-        signal.alarm(1)  # 1 second max timeout
-
     try:
         prisma = get_prisma()
 
@@ -187,9 +179,9 @@ async def run_matching_for_student(
             if int(student_dict["backlogs"]) > 0 and not getattr(job, "backlogAllowed", True):
                 continue
             if job.eligibleBranches:
-                s_branch = student_dict["branch"].lower()
-                allowed = [b.lower() for b in job.eligibleBranches]
-                if s_branch not in allowed and not any(s_branch in a or a in s_branch for a in allowed):
+                s_branch = student_dict["branch"].strip().lower()
+                allowed = {b.strip().lower() for b in job.eligibleBranches}
+                if s_branch not in allowed:
                     continue
             eligible_jobs.append(job)
 
@@ -309,13 +301,9 @@ async def run_matching_for_student(
 
         return ranked_results[:TOP_N_RETURN]
 
-    except TimeoutError:
-        logger.error("Matching pipeline timed out for user %s", student_user_id)
+    except Exception:
+        logger.exception("Matching pipeline failed for user %s", student_user_id)
         return []
-        
-    finally:
-        if hasattr(signal, "SIGALRM"):
-            signal.alarm(0)
 
 
 async def run_matching_for_job(
@@ -345,38 +333,22 @@ async def run_matching_for_job(
     job_dict = _job_to_dict(job, job_skills)
     job_emb = await _get_job_embedding(prisma, job.id, job_dict)
 
-    # ── Stage 1: Hard Gate Eligibility (DB OPTIMIZED) ──
-    # Load ONLY eligible students directly via DB queries to survive 1M users.
+    # ── Stage 1: Hard Gate Eligibility (DB-level CGPA filter) ──
     min_cgpa = float(job.minCgpa or 0.0)
-    backlog_allowed = getattr(job, "backlogAllowed", True)
-    allowed_branches = [b.lower() for b in (job.eligibleBranches or [])]
+    allowed_branches = {b.strip().lower() for b in (job.eligibleBranches or [])}
 
-    # Dynamically build the filtering where-clause
-    where_clause = {
-        "cgpa": {"gte": min_cgpa}
-    }
-    
-    if not backlog_allowed:
-        # If backlogs are not allowed, enforce backlogs <= 0
-        # Assuming backlogs is Int in schema, though it might not exist in Prisma schema?
-        # WAIT: Let's check prisma schema from earlier. The schema actually doesn't have 'backlogs' column in StudentProfile!
-        # Ah, we were defaulting to 0 previously: `int(p.backlogs or 0) > 0`.
-        pass 
-
-    # For safety with loose Postgres schema, we just fetch with basic minimum filters
     profiles = await prisma.studentprofile.find_many(
-        where=where_clause,
+        where={"cgpa": {"gte": min_cgpa}},
         include={"studentSkills": {"include": {"skill": True}}},
     )
     
     eligible_profiles = []
     for p in profiles:
-        # Python-level branch check (since array intersection logic can be tricky in Prisma)
+        # Exact-token branch check
         if allowed_branches:
-            s_branch = (p.branch or "").lower()
-            if s_branch not in allowed_branches and not any(s_branch in b or b in s_branch for b in allowed_branches):
+            s_branch = (p.branch or "").strip().lower()
+            if s_branch not in allowed_branches:
                 continue
-        # Wait, if backlogs existed we'd filter it here, but it's not in schema natively yet.
         eligible_profiles.append(p)
 
     if not eligible_profiles:

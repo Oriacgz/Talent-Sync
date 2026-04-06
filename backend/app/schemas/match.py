@@ -5,7 +5,7 @@ Pydantic schemas for match API responses.
 
 from __future__ import annotations
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 
 class ScoreBreakdown(BaseModel):
@@ -23,8 +23,8 @@ class MatchResponse(BaseModel):
     job_type: str | None
     salary_min: int | None
     salary_max: int | None
-    required_skills: list[str] = []
-    missing_skills: list[str] = []
+    required_skills: list[str] = Field(default_factory=list)
+    missing_skills: list[str] = Field(default_factory=list)
     similarity_score: float
     ml_score: float
     final_score: float
@@ -43,7 +43,7 @@ class CandidateMatchResponse(BaseModel):
     similarity_score: float
     top_reasons: list[str]
     shap_values: dict
-    skills: list[str] = []
+    skills: list[str] = Field(default_factory=list)
     email: str | None = None
     phone: str | None = None
     branch: str | None = None

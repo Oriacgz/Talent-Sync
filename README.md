@@ -75,14 +75,15 @@ python -m prisma migrate deploy --schema prisma/schema.prisma
 
 ### ML Setup (Important)
 
-**⚠️ REQUIRED TEAMMATE FILES:** Because GitHub correctly ignores large data and security files natively, you MUST manually drop the following files onto your laptop before running the ML scripts:
-1. Your `.env` files (Ask the repository owner for their local secrets).
-2. The exact 3 offline mock datasets placed strictly inside `ml_training/data/raw/`:
+**⚠️ REQUIRED FILES (not tracked by Git):**
+1. Create your own `backend/.env` from `backend/.env.example` and fill in your local values.
+   Do NOT copy another developer's `.env` directly — use the team's shared password manager or ask for specific values securely.
+2. Obtain the 3 raw mock datasets from the team's internal source and place them in `ml_training/data/raw/`:
     - `student_profiles.csv`
     - `job_postings.csv`
     - `match_outcomes.csv`
 
-Once those files are mapped, generate the machine learning engine mathematically on your laptop:
+Once those files are in place, generate the ML engine locally:
 
 ```powershell
 cd C:\Talent-Sync\Talent-Sync\backend
@@ -93,14 +94,13 @@ python -m scripts.train_scorer
 ```
 
 **What this ML process actually does:**
-1. `preprocess_data.py`: This merges the 3 raw CSVs and engineers 15 structured mathematical features. 
-   - **The Core Math:** It natively calculates **Cosine Similarity**. By tracking the angular distance between a Student's SBERT array and a Job's SBERT array, it builds a raw baseline Semantic Match limit (e.g., 85%). It then outputs the finalized `merged_dataset.csv`.
-2. `train_scorer.py`: This script leverages XGBoost Decision Trees to formally identify exactly which of those 15 features leads to accurate HR hirings based on history. It outputs three live API binaries into your `backend/app/ml/artifacts/` folder:
+1. `preprocess_data.py`: Merges the 3 raw CSVs on student_id/job_id and engineers 15 features (skill_overlap_ratio, cgpa_normalized, branch_eligible, etc.). Outputs a cleaned `ml_training/data/processed/merged_dataset.csv`.
+2. `train_scorer.py`: Trains XGBoost Decision Trees on those 15 features to predict which student-job pairs lead to successful hires. Outputs three live binaries into `backend/app/ml/artifacts/`:
     - `scorer_model.pkl`: The active XGBoost decision engine.
-    - `feature_scaler.pkl`: The system that compresses extreme outliers into a controlled `[0,1]` scale purely so attributes (like arbitrary Certification counts) don't dominate XGBoost.
-    - `feature_names.pkl`: Strict mappings preventing FastAPI bugs.
+    - `feature_scaler.pkl`: MinMaxScaler that compresses all feature values into a controlled `[0,1]` range so no single attribute dominates the model.
+    - `feature_names.pkl`: Strict ordered feature list preventing training-inference mismatch.
 
-*(Note: The system contains an ultimate Failsafe. If the XGBoost `.pkl` becomes corrupt or missing during a deployment, the backend silently catches the error and degrades cleanly to relying exclusively on the native **Cosine Similarity** percentage mapping to continue ranking jobs safely!)*
+*(Failsafe: If the `.pkl` files are missing or corrupt, the backend catches the error and degrades to pure Cosine Similarity ranking. The system never crashes.)*
 
 Install frontend dependencies:
 

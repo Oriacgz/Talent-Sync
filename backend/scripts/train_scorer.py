@@ -116,7 +116,13 @@ def main() -> None:
     def is_branch_eligible(branch, eligible):
         if pd.isna(eligible) or str(eligible).strip() == "":
             return 1.0
-        return 1.0 if str(branch).lower() in str(eligible).lower() else 0.0
+        normalized_branch = str(branch).strip().lower()
+        eligible_tokens = {
+            tok.strip().lower()
+            for tok in str(eligible).split("|")
+            if tok.strip()
+        }
+        return 1.0 if normalized_branch in eligible_tokens else 0.0
     df["branch_eligible"] = df.apply(lambda row: is_branch_eligible(row.get("branch"), row.get("eligible_branches") or row.get("eligibleBranches")), axis=1)
 
     # 4. experience_gap
@@ -144,8 +150,20 @@ def main() -> None:
         if "devops" in t: return "devops"
         return "general"
     
-    df["job_domain"] = df.get("title", pd.Series([""]*len(df))).apply(extract_domain)
-    pref_roles = df.get("preferred_roles") if "preferred_roles" in df.columns else df.get("preferredRoles", pd.Series([""]*len(df)))
+    # Use role_title as fallback for title column (merged CSV may use either)
+    job_title_col = None
+    for col_name in ["title", "role_title"]:
+        if col_name in df.columns:
+            job_title_col = col_name
+            break
+    df["job_domain"] = df[job_title_col].fillna("").apply(extract_domain) if job_title_col else pd.Series(["general"]*len(df))
+
+    pref_roles_col = None
+    for col_name in ["preferred_roles", "preferredRoles"]:
+        if col_name in df.columns:
+            pref_roles_col = col_name
+            break
+    pref_roles = df[pref_roles_col].fillna("") if pref_roles_col else pd.Series([""]*len(df))
     df["student_domain"] = pref_roles.apply(extract_domain)
     df["domain_match"] = (df["job_domain"] == df["student_domain"]).astype(float)
 

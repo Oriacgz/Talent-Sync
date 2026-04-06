@@ -1,7 +1,7 @@
 """
 backend/scripts/generate_embeddings.py
 Encodes student profiles + job postings using SBERT.
-Run: python -m scripts.generate_embeddings
+Run: cd backend && python -m scripts.generate_embeddings
 Requires: pip install sentence-transformers tqdm numpy pandas
 """
 
