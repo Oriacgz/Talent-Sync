@@ -38,8 +38,9 @@ from backend.app.ml.model_manager import save_new_model
 
 # ── Paths ────────────────────────────────────────────────────────────────────
 
-PROC_DIR    = Path("ml_training/data/processed")
-ARTIFACTS   = Path("backend/app/ml/artifacts")
+ROOT_DIR    = Path(__file__).resolve().parent.parent.parent
+PROC_DIR    = ROOT_DIR / "ml_training" / "data" / "processed"
+ARTIFACTS   = Path(__file__).resolve().parent.parent / "app" / "ml" / "artifacts"
 ARTIFACTS.mkdir(parents=True, exist_ok=True)
 
 # ── Features ─────────────────────────────────────────────────────────────────

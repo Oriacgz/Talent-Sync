@@ -77,30 +77,42 @@ python -m prisma migrate deploy --schema prisma/schema.prisma
 
 **⚠️ REQUIRED FILES (not tracked by Git):**
 1. Create your own `backend/.env` from `backend/.env.example` and fill in your local values.
-   Do NOT copy another developer's `.env` directly — use the team's shared password manager or ask for specific values securely.
 2. Obtain the 3 raw mock datasets from the team's internal source and place them in `ml_training/data/raw/`:
     - `student_profiles.csv`
     - `job_postings.csv`
     - `match_outcomes.csv`
 
-Once those files are in place, generate the ML engine locally:
+Once those files are in place, generate the ML engine locally by running these **three** scripts in order:
 
 ```powershell
 cd C:\Talent-Sync\Talent-Sync\backend
 & .\.venv\Scripts\Activate.ps1
 $env:PATH = "$(Resolve-Path .\.venv\Scripts);$env:PATH"
+
+# 1. Preprocess raw data
 python -m scripts.preprocess_data
+
+# 2. Generate SBERT Embeddings (Required for semantic search)
+python -m scripts.generate_embeddings
+
+# 3. Train the XGBoost Scorer
 python -m scripts.train_scorer
 ```
 
 **What this ML process actually does:**
-1. `preprocess_data.py`: Merges the 3 raw CSVs on student_id/job_id and engineers 15 features (skill_overlap_ratio, cgpa_normalized, branch_eligible, etc.). Outputs a cleaned `ml_training/data/processed/merged_dataset.csv`.
-2. `train_scorer.py`: Trains XGBoost Decision Trees on those 15 features to predict which student-job pairs lead to successful hires. Outputs three live binaries into `backend/app/ml/artifacts/`:
-    - `scorer_model.pkl`: The active XGBoost decision engine.
-    - `feature_scaler.pkl`: MinMaxScaler that compresses all feature values into a controlled `[0,1]` range so no single attribute dominates the model.
-    - `feature_names.pkl`: Strict ordered feature list preventing training-inference mismatch.
+1.  **`preprocess_data.py`**: Merges raw CSVs and engineers features. 
+    - Output: `ml_training/data/processed/merged_dataset.csv`
+2.  **`generate_embeddings.py`**: Uses sentence-transformers (SBERT) to convert text descriptions into math vectors.
+    - Output (`.npy`): `student_embeddings.npy`, `job_embeddings.npy`
+    - Output (`.json`): `student_id_map.json`, `job_id_map.json`
+3.  **`train_scorer.py`**: Trains the XGBoost model on the engineered features and embeddings.
+    - Output (`.pkl`): `scorer_model.pkl` (The Brain), `feature_scaler.pkl`, `feature_names.pkl`
+    - Output (`.json`): `model_metadata.json` (Accuracy, recall, etc.)
+    - Output (`.png`): `feature_importance.png` (Chart showing what the AI cares about most)
 
-*(Failsafe: If the `.pkl` files are missing or corrupt, the backend catches the error and degrades to pure Cosine Similarity ranking. The system never crashes.)*
+**Artifacts Location:** All binaries and maps are stored in `backend/app/ml/artifacts/`.
+
+*(Failsafe: If the artifacts are missing, the backend degrades to basic keyword matching automatically.)*
 
 Install frontend dependencies:
 

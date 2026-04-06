@@ -8,8 +8,9 @@ Saves processed output to ml_training/data/processed/merged_dataset.csv
 import pandas as pd
 from pathlib import Path
 
-RAW_DIR = Path("ml_training/data/raw")
-PROC_DIR = Path("ml_training/data/processed")
+ROOT_DIR = Path(__file__).resolve().parent.parent.parent
+RAW_DIR = ROOT_DIR / "ml_training" / "data" / "raw"
+PROC_DIR = ROOT_DIR / "ml_training" / "data" / "processed"
 PROC_DIR.mkdir(parents=True, exist_ok=True)
 
 def parse_pipe_list(val):

@@ -17,8 +17,8 @@ PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent
 sys.path.insert(0, str(PROJECT_ROOT / "backend"))
 from app.ml.encoder import ProfileEncoder
 
-RAW_DIR = Path("ml_training/data/raw")
-ARTIFACTS_DIR = Path("backend/app/ml/artifacts")
+RAW_DIR = PROJECT_ROOT / "ml_training" / "data" / "raw"
+ARTIFACTS_DIR = PROJECT_ROOT / "backend" / "app" / "ml" / "artifacts"
 ARTIFACTS_DIR.mkdir(parents=True, exist_ok=True)
 
 # Step 1: Text representations
