@@ -122,15 +122,23 @@ export default function MatchDetailPage() {
   return (
     <section className="grid gap-4 xl:grid-cols-[minmax(0,2fr)_minmax(280px,1fr)]">
       <article className="stack-base card-base">
-        <div className="brutal-panel brutal-panel-accent">
-          <p className="text-[10px] uppercase tracking-[0.2em] text-ink/80">Overall Match Score</p>
-          <p className="text-4xl font-bold text-ink">{scoreToPercent(match.score || match.finalScore || 0)}</p>
-          <p className="mt-1 text-xs text-ink/75">This score combines skill alignment, profile strength, and role-fit signals.</p>
+        <div
+          className="brutal-panel"
+          style={{
+            borderLeft: '4px solid var(--accent-yellow, #F5C542)',
+            background: 'linear-gradient(135deg, rgba(245,197,66,0.16), rgba(245,197,66,0.04))',
+          }}
+        >
+          <p className="text-[10px] uppercase tracking-[0.2em]" style={{ color: 'var(--text-primary)', opacity: 0.85 }}>Overall Match Score</p>
+          <p className="text-4xl font-bold" style={{ color: 'var(--text-primary)' }}>{scoreToPercent(match.score || match.finalScore || 0)}</p>
+          <p className="mt-1 text-xs" style={{ color: 'var(--text-secondary)' }}>This score combines skill alignment, profile strength, and role-fit signals.</p>
         </div>
 
         <header>
           <h1 className="wrap-break-word text-2xl font-bold">{match.title || 'Role'}</h1>
-          <p className="wrap-break-word text-secondary">{match.company || 'Company'} · {match.location || 'Remote'}</p>
+          <p className="wrap-break-word text-sm" style={{ color: 'var(--text-secondary)' }}>
+            {match.company || 'Company'} · {match.location || 'Remote'}
+          </p>
         </header>
 
         <p className="text-sm text-ink/85">{buildMatchNarrative(match)}</p>
@@ -149,7 +157,7 @@ export default function MatchDetailPage() {
           <p>{'Profile input -> data processing -> score generation -> explainability factors.'}</p>
         </article>
 
-        <div className="surface-muted text-xs text-ink/75">
+        <div className="brutal-panel text-xs" style={{ background: 'var(--bg-subtle)', color: 'var(--text-secondary)' }}>
           <p className="mb-2 text-ink/90">Top explainability signals</p>
           <div className="stack-dense">
             {topReasons.length ? (
@@ -163,12 +171,12 @@ export default function MatchDetailPage() {
         </div>
 
         <div className="grid gap-3 md:grid-cols-2">
-          <div className="surface-info text-xs text-ink/85">
+          <div className="brutal-panel text-xs text-ink/85" style={{ background: 'rgba(0,184,217,0.12)' }}>
             <p className="mb-1 uppercase tracking-wider text-ink">Strongest Factor</p>
             <p className="font-semibold text-ink">{strongest?.feature ? formatFeatureLabel(strongest.feature) : 'N/A'}</p>
             <p>{explainFactor(strongest)}</p>
           </div>
-          <div className="surface-muted text-xs text-ink/85">
+          <div className="brutal-panel text-xs text-ink/85" style={{ background: 'var(--bg-subtle)' }}>
             <p className="mb-1 uppercase tracking-wider text-ink">Weakest Factor</p>
             <p className="font-semibold text-ink">{weakest?.feature ? formatFeatureLabel(weakest.feature) : 'N/A'}</p>
             <p>{explainFactor(weakest)}</p>

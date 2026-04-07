@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { ChevronRight, Filter } from 'lucide-react'
 import { matchService } from '../../services/matchService'
+import { jobService } from '../../services/jobService'
 import { formatFeatureLabel, topShapReasons } from '../../utils/formatters'
 import EmptyState from '../shared/EmptyState'
 import MatchRing from '../shared/MatchRing'
@@ -19,7 +20,13 @@ function getTopSkills(skills) {
   return skills.slice(0, 3)
 }
 
-function TableRow({ candidate, index, onViewDetail }) {
+function getJobsFromPayload(payload) {
+  if (Array.isArray(payload)) return payload
+  if (Array.isArray(payload?.items)) return payload.items
+  return []
+}
+
+function TableRow({ candidate, index, onViewDetail, showJobContext }) {
   const topReasons = topShapReasons(candidate.shapValues, 2, 0.01)
   const skills = getTopSkills(candidate.skills)
 
@@ -40,6 +47,11 @@ function TableRow({ candidate, index, onViewDetail }) {
             <p className="font-sans text-[12px] text-(--text-secondary)">
               {candidate.college || 'College'} <span className="opacity-50 mx-1">•</span> GPA {candidate.gpa ?? '-'}
             </p>
+            {showJobContext && candidate.jobTitle ? (
+              <p className="font-sans text-[11px] text-(--text-muted) mt-1">
+                For: {candidate.jobTitle}
+              </p>
+            ) : null}
           </div>
         </div>
       </td>
@@ -90,6 +102,7 @@ export default function CandidatesPage() {
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
   const jobId = String(searchParams.get('jobId') || '').trim()
+  const isJobFiltered = Boolean(jobId)
   const [candidates, setCandidates] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
@@ -101,9 +114,60 @@ export default function CandidatesPage() {
     const load = async () => {
       setLoading(true)
       setError('')
-      const data = await matchService.getJobCandidates(jobId)
+
+      if (jobId) {
+        const data = await matchService.getJobCandidates(jobId)
+        if (!active) return
+        const scoped = (Array.isArray(data) ? data : []).map((candidate) => ({
+          ...candidate,
+          jobId,
+        }))
+        setCandidates(scoped)
+        setLoading(false)
+        return
+      }
+
+      const jobPayload = await jobService.getMyJobs({ is_active: true })
+      const jobs = getJobsFromPayload(jobPayload)
+        .filter((job) => String(job?.id || '').trim())
+
       if (!active) return
-      setCandidates(Array.isArray(data) ? data : [])
+
+      if (!jobs.length) {
+        setCandidates([])
+        setLoading(false)
+        return
+      }
+
+      const jobsWithApplicants = jobs.filter((job) => Number(job?.applicationCount || 0) > 0)
+      const targetJobs = jobsWithApplicants.length ? jobsWithApplicants : jobs
+
+      const settled = await Promise.allSettled(
+        targetJobs.map((job) => matchService.getJobCandidates(String(job.id)))
+      )
+
+      if (!active) return
+
+      const merged = []
+      settled.forEach((result, idx) => {
+        if (result.status !== 'fulfilled' || !Array.isArray(result.value)) return
+        const sourceJob = targetJobs[idx]
+        result.value.forEach((candidate) => {
+          merged.push({
+            ...candidate,
+            jobId: String(sourceJob.id),
+            jobTitle: sourceJob.title || '',
+          })
+        })
+      })
+
+      const deduped = Array.from(
+        new Map(
+          merged.map((candidate) => [`${candidate.jobId}:${candidate.id}`, candidate])
+        ).values()
+      )
+
+      setCandidates(deduped)
       setLoading(false)
     }
 
@@ -122,9 +186,12 @@ export default function CandidatesPage() {
     [candidates]
   )
 
-  const onViewDetail = useCallback((candidateId) => {
-    navigate(`/recruiter/candidates/${candidateId}`)
-  }, [navigate])
+  const onViewDetail = useCallback((candidate) => {
+    if (!candidate?.id) return
+    const targetJobId = String(candidate.jobId || jobId || '').trim()
+    const qs = targetJobId ? `?jobId=${encodeURIComponent(targetJobId)}` : ''
+    navigate(`/recruiter/candidates/${candidate.id}${qs}`)
+  }, [navigate, jobId])
 
   return (
     <section className="flex flex-col gap-8 pb-12 w-full max-w-none">
@@ -205,10 +272,11 @@ export default function CandidatesPage() {
             <tbody>
               {sortedCandidates.map((candidate, index) => (
                 <TableRow
-                  key={candidate.id}
+                  key={`${candidate.jobId || 'any'}:${candidate.id}`}
                   candidate={candidate}
                   index={index}
                   onViewDetail={onViewDetail}
+                  showJobContext={!isJobFiltered}
                 />
               ))}
             </tbody>

@@ -14,6 +14,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 import json
 import logging
+from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 
@@ -58,6 +59,115 @@ def _latest_model_timestamp() -> datetime | None:
     return None
 
 
+def _safe_shap_values(raw: Any) -> dict:
+    if not raw:
+        return {}
+    if isinstance(raw, dict):
+        return raw
+    try:
+        return dict(raw)
+    except Exception:
+        return {}
+
+
+def _merge_ranked_with_applied(
+    ranked: list[dict[str, Any]],
+    applied: list[dict[str, Any]],
+) -> list[dict[str, Any]]:
+    if not ranked:
+        return applied
+    if not applied:
+        return ranked
+
+    merged = list(ranked)
+    seen_student_ids = {
+        str(row.get("student_id", "")).strip()
+        for row in ranked
+        if str(row.get("student_id", "")).strip()
+    }
+    for candidate in applied:
+        student_id = str(candidate.get("student_id", "")).strip()
+        if not student_id or student_id in seen_student_ids:
+            continue
+        merged.append(candidate)
+        seen_student_ids.add(student_id)
+    return merged
+
+
+async def _get_applied_candidates_for_job(job_id: str) -> list[dict[str, Any]]:
+    prisma = get_prisma()
+
+    applications = await prisma.application.find_many(
+        where={"jobId": job_id},
+        order={"appliedAt": "desc"},
+        include={
+            "student": {
+                "include": {
+                    "user": True,
+                    "studentSkills": {"include": {"skill": True}},
+                }
+            }
+        },
+    )
+    if not applications:
+        return []
+
+    student_ids = [
+        app.studentId for app in applications
+        if getattr(app, "studentId", None)
+    ]
+    match_rows = await prisma.matchscore.find_many(
+        where={
+            "jobId": job_id,
+            "studentId": {"in": student_ids},
+        }
+    ) if student_ids else []
+    match_by_student_id = {row.studentId: row for row in match_rows}
+
+    candidates: list[dict[str, Any]] = []
+    for app in applications:
+        student = getattr(app, "student", None)
+        if not student:
+            continue
+
+        match_row = match_by_student_id.get(app.studentId)
+        top_reasons: list[str] = []
+        if match_row and getattr(match_row, "explanation", None):
+            top_reasons = [
+                part.strip()
+                for part in str(match_row.explanation).split(" | ")
+                if part and part.strip()
+            ]
+        if not top_reasons:
+            top_reasons = ["Student has applied to this job."]
+
+        student_skills = [
+            ss.skill.name
+            for ss in (getattr(student, "studentSkills", None) or [])
+            if getattr(ss, "skill", None)
+        ]
+        user = getattr(student, "user", None)
+
+        candidates.append(
+            {
+                "student_id": student.id,
+                "student_name": student.fullName,
+                "final_score": float(getattr(match_row, "finalScore", 0.0) or 0.0),
+                "similarity_score": float(getattr(match_row, "similarityScore", 0.0) or 0.0),
+                "top_reasons": top_reasons,
+                "shap_values": _safe_shap_values(getattr(match_row, "shapValues", None)),
+                "skills": student_skills,
+                "email": getattr(user, "email", "") or "",
+                "phone": "",
+                "branch": student.branch or "",
+                "cgpa": float(student.cgpa or 0.0),
+            }
+        )
+
+    candidates.sort(key=lambda row: float(row.get("final_score", 0.0) or 0.0), reverse=True)
+    return candidates
+
+
 # ── Student endpoints ─────────────────────────────────────────────────────────
 
 @router.get("", response_model=list[MatchResponse])
@@ -95,25 +205,57 @@ async def get_my_matches(
     cached = await prisma.matchscore.find_many(
         where={"studentId": profile.id},
         order={"finalScore": "desc"},
-        take=limit,
         include={"job": {"include": {"recruiter": True, "jobSkills": {"include": {"skill": True}}}}},
     )
 
     if cached:
+        active_cached = [
+            m for m in cached
+            if getattr(m, "job", None) and getattr(m.job, "isActive", False)
+        ]
+        has_inactive_cached_rows = len(active_cached) != len(cached)
+
         model_timestamp = _latest_model_timestamp()
         latest_cache_timestamp = _to_utc(
-            max((m.updatedAt for m in cached if getattr(m, "updatedAt", None)), default=None)
+            max((m.updatedAt for m in active_cached if getattr(m, "updatedAt", None)), default=None)
         )
+        latest_active_job = await prisma.job.find_first(
+            where={"isActive": True},
+            order={"updatedAt": "desc"},
+        )
+        latest_active_job_timestamp = _to_utc(getattr(latest_active_job, "updatedAt", None))
+
+        should_refresh = False
+        refresh_reasons: list[str] = []
+
         if model_timestamp and (
             latest_cache_timestamp is None or latest_cache_timestamp < model_timestamp
         ):
+            should_refresh = True
+            refresh_reasons.append("model_updated")
+
+        if latest_active_job_timestamp and (
+            latest_cache_timestamp is None or latest_cache_timestamp < latest_active_job_timestamp
+        ):
+            should_refresh = True
+            refresh_reasons.append("jobs_updated")
+
+        if has_inactive_cached_rows:
+            should_refresh = True
+            refresh_reasons.append("inactive_jobs_in_cache")
+
+        if should_refresh:
             logger.info(
-                "Match cache is stale for student %s (cache=%s, model=%s); refreshing.",
+                "Match cache is stale for student %s (cache=%s, model=%s, jobs=%s, reasons=%s); refreshing.",
                 profile.id,
                 latest_cache_timestamp,
                 model_timestamp,
+                latest_active_job_timestamp,
+                ",".join(refresh_reasons),
             )
             return await _run_and_format(user_id, profile, force_refresh=True)
+
+        cached = active_cached[:limit]
 
     if cached:
         # Build application lookup
@@ -289,6 +431,9 @@ async def get_candidates_for_job(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Matching engine error.",
         ) from exc
+
+    applied_candidates = await _get_applied_candidates_for_job(job_id)
+    results = _merge_ranked_with_applied(results, applied_candidates)
 
     return [
         CandidateMatchResponse(

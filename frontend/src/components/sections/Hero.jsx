@@ -19,14 +19,14 @@ export default function Hero() {
   useEffect(() => {
     const handleLoaderDone = () => {
       const tl = gsap.timeline();
-      
-      tl.fromTo('.hero-badge', 
+
+      tl.fromTo('.hero-badge',
         { y: -10, opacity: 0, willChange: 'transform, opacity' },
         { y: 0, opacity: 1, duration: 0.5, stagger: 0.1, ease: 'power2.out', onComplete: function() { gsap.set(this.targets(), { clearProps: 'willChange' }) } },
         0.2
       );
 
-      tl.fromTo('.hero-line', 
+      tl.fromTo('.hero-line',
         { clipPath: 'inset(0 100% 0 0)', willChange: 'clip-path' },
         { clipPath: 'inset(0 0% 0 0)', duration: 0.9, stagger: 0.12, ease: 'power4.inOut', onComplete: function() { gsap.set(this.targets(), { clearProps: 'willChange' }) } },
         0.4
@@ -37,7 +37,7 @@ export default function Hero() {
         { scaleX: 1, duration: 0.6, ease: 'power4.inOut', onComplete: function() { gsap.set(this.targets(), { clearProps: 'willChange' }) } },
         0.59
       );
-      
+
       tl.fromTo('.hero-sub',
         { y: 20, opacity: 0, willChange: 'transform, opacity' },
         { y: 0, opacity: 1, duration: 0.6, ease: 'power2.out', onComplete: function() { gsap.set(this.targets(), { clearProps: 'willChange' }) } },
@@ -55,7 +55,7 @@ export default function Hero() {
         { x: 0, opacity: 1, duration: 0.8, ease: 'power3.out', onComplete: function() { gsap.set(this.targets(), { clearProps: 'willChange' }) } },
         1.2
       );
-      
+
       gsap.to('.hero-card-float', {
         y: -8,
         duration: 2,
@@ -64,7 +64,7 @@ export default function Hero() {
         ease: 'sine.inOut',
         delay: 2
       });
-      
+
       const matchObj = { val: 0 };
       gsap.to(matchObj, {
         val: 87,
@@ -79,7 +79,7 @@ export default function Hero() {
     };
 
     window.addEventListener('loader:done', handleLoaderDone);
-    
+
     if (document.body.classList.contains('loaded')) {
       handleLoaderDone();
     }
@@ -91,13 +91,13 @@ export default function Hero() {
         ease: 'none',
         scrollTrigger: { fastScrollEnd: true, preventOverlaps: true,  trigger: '#hero-section', start: 'top top', end: 'bottom top', scrub: 1 }
       });
-      
+
       gsap.to('.hero-main-content', {
         y: '-5vh',
         ease: 'none',
         scrollTrigger: { fastScrollEnd: true, preventOverlaps: true,  trigger: '#hero-section', start: 'top top', end: 'bottom top', scrub: 1 }
       });
-      
+
       gsap.to('.hero-card-wrapper', {
         y: '15vh',
         ease: 'none',
@@ -113,9 +113,9 @@ export default function Hero() {
 
   return (
     <section id="hero-section" className="min-h-[100svh] bg-ink relative overflow-hidden flex items-center pt-16">
-      
+
       {/* LAYER 0: Grid + Three.js */}
-      <div 
+      <div
         className="grid-bg-parallax absolute inset-0 z-0 h-[130vh] -top-[15vh]"
         style={{
           backgroundImage: `linear-gradient(rgba(255,225,53,0.04) 1px, transparent 1px), linear-gradient(90deg, rgba(255,225,53,0.04) 1px, transparent 1px)`,
@@ -133,7 +133,7 @@ export default function Hero() {
 
       {/* LAYER 2: Main Content */}
       <div className="hero-main-content relative z-10 w-full max-w-[1240px] mx-auto px-[5vw] md:px-[6vw] lg:px-[8vw] flex flex-col justify-center">
-        
+
         <div className="flex flex-wrap gap-4 mb-8">
           <div className="hero-badge opacity-0">
             <Badge label="SDG 8 / TE-B GRP-04" dark={true} className="border-yellow/40 text-paper/60" />
@@ -156,7 +156,8 @@ export default function Hero() {
         </h1>
 
         <p className="hero-sub font-mono text-[0.875rem] text-paper/55 leading-[1.7] max-w-[520px] mb-12 opacity-0">
-          TalentSync uses SBERT semantic matching and SHAP explainability to connect students with internships based on real compatibility — not keywords, not luck.
+          TalentSync uses SBERT semantic matching and SHAP explainability to connect students with internships
+          based on real compatibility — not keywords, not luck.
         </p>
 
         <div className="flex flex-col items-start gap-2">
@@ -180,14 +181,14 @@ export default function Hero() {
       <div className="hero-card-wrapper absolute right-8 lg:right-16 top-1/2 -translate-y-1/2 z-20 hidden lg:block">
         <div className="hero-card opacity-0">
           <div className="hero-card-float bg-paper/[0.03] border border-paper/10 backdrop-blur-[20px] p-6 text-paper flex flex-col gap-4 shadow-2xl match-card" style={{ width: "clamp(220px, 20vw, 300px)" }}>
-            
+
             <div className="flex justify-between items-center font-mono text-[0.65rem] text-cyan tracking-widest uppercase">
               <span className="flex items-center gap-2">
                 <span className="w-2 h-2 rounded-full bg-cyan inline-block animate-[pulse_2s_ease-in-out_infinite]"></span>
                 LIVE MATCH
               </span>
             </div>
-            
+
             <div>
               <div className="font-mono text-[0.65rem] opacity-50 uppercase tracking-widest mb-1">Student #2847</div>
               <div className="flex flex-wrap gap-1">
@@ -196,14 +197,14 @@ export default function Hero() {
                 <Badge label="React" dark={true} className="text-[0.55rem] py-1 border-paper/30" />
               </div>
             </div>
-            
+
             <div className="border-t border-paper/10 pt-4 mt-2">
               <div className="font-sans font-bold text-3xl text-yellow leading-none tracking-tighter" id="match-number">
                 0% MATCH
               </div>
               <div className="text-sm mt-3 opacity-90">Data Analyst @ TechCorp</div>
             </div>
-            
+
             <div className="flex flex-col gap-3 mt-2">
               <div className="flex flex-col gap-1">
                 <div className="text-[0.6rem] font-mono text-paper/60 leading-none">TECHNICAL FIT</div>
@@ -218,7 +219,7 @@ export default function Hero() {
                 <div className="w-full h-[2px]"><div className="bg-yellow h-full w-[78%]"></div></div>
               </div>
             </div>
-            
+
             <div className="font-mono text-[0.55rem] text-paper/30 mt-3 uppercase tracking-widest pt-3 border-t border-paper/10">
               AI Match Engine · Real-time
             </div>
@@ -238,7 +239,7 @@ export default function Hero() {
            <PaperTear topColor="#0A0A0A" bottomColor="#FAF9F6" />
         </div>
       </div>
-      
+
       {/* SEO Metadata heuristic fix */}
       <div className="hidden" aria-hidden="true">
         <title>TalentSync - AI Internship Matching</title>

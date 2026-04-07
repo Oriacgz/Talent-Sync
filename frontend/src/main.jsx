@@ -20,6 +20,7 @@ const StudentDashboardPage = lazy(() => import('./components/student/DashboardPa
 const StudentProfilePage = lazy(() => import('./components/student/ProfilePage.jsx'))
 const StudentApplicationsPage = lazy(() => import('./components/student/ApplicationsPage.jsx'))
 const StudentMatchDetailPage = lazy(() => import('./components/student/MatchDetailPage.jsx'))
+const StudentJobDetailPage = lazy(() => import('./components/student/JobDetailPage.jsx'))
 const StudentOnboardingPage = lazy(() => import('./components/student/OnboardingPage.jsx'))
 const StudentMatchesPage = lazy(() => import('./components/student/MatchesPage.jsx'))
 
@@ -52,6 +53,7 @@ createRoot(document.getElementById('root')).render(
                     <Route path="/student/matches" element={<StudentMatchesPage />} />
                     <Route path="/student/applications" element={<StudentApplicationsPage />} />
                     <Route path="/student/match/:id" element={<StudentMatchDetailPage />} />
+                    <Route path="/student/jobs/:id" element={<StudentJobDetailPage />} />
                     <Route path="/student/onboarding" element={<StudentOnboardingPage />} />
                     <Route path="/student/how-it-works" element={<HowMatchingWorksPage />} />
                   </Route>

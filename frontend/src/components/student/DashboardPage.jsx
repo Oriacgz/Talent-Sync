@@ -10,6 +10,7 @@ import { useAuthStore } from "../../store/authStore";
 import { matchService } from "../../services/matchService";
 import { applicationService } from "../../services/applicationService";
 import { profileService } from "../../services/profileService";
+import { buildMatchNarrative, explainFactor, topShapReasons } from "../../utils/formatters";
 
 // ─────────────────────────────────────────────
 // HELPERS
@@ -153,7 +154,8 @@ function ProfileBanner({ pct, missing }) {
 // ─────────────────────────────────────────────
 // STAT CARD
 // ─────────────────────────────────────────────
-function StatCard({ label, value, icon: Icon, color, loading }) {
+function StatCard({ label, value, icon, color, loading }) {
+  const Icon = icon;
   const accent = { yellow: "#F5C542", blue: "#3b82f6", green: "#22c55e", purple: "#a855f7" }[color];
   return (
     <div
@@ -210,11 +212,36 @@ function MatchCard({ match, appliedIds, onApply }) {
   const salMin   = match.salaryMin ?? match.salary_min ?? match.job?.salaryMin;
   const salMax   = match.salaryMax ?? match.salary_max ?? match.job?.salaryMax;
   const skills   = match.requiredSkills ?? match.skills ?? match.job?.skills ?? [];
-  const reasons  = match.topReasons ?? match.top_reasons ?? [];
+  const missingSkills = match.missingSkills ?? match.missing_skills ?? [];
+  const reasons  = useMemo(
+    () => match.topReasons ?? match.top_reasons ?? [],
+    [match.topReasons, match.top_reasons]
+  );
+  const shapValues = useMemo(
+    () => match.shapValues ?? match.shap_values ?? {},
+    [match.shapValues, match.shap_values]
+  );
+  const scoreBreakdown = useMemo(
+    () => match.scoreBreakdown ?? match.score_breakdown ?? {},
+    [match.scoreBreakdown, match.score_breakdown]
+  );
   const rawScore = match.finalScore ?? match.final_score ?? match.score ?? 0;
   const score    = Math.round(rawScore * 100);
   const salary   = formatSalary(salMin, salMax);
   const isApplied = appliedIds.has(jobId);
+
+  const similarityScore = Number(scoreBreakdown.similarityScore ?? scoreBreakdown.similarity_score ?? rawScore) || 0;
+  const mlScore = Number(scoreBreakdown.mlScore ?? scoreBreakdown.ml_score ?? 0) || 0;
+  const finalScore = Number(scoreBreakdown.finalScore ?? scoreBreakdown.final_score ?? rawScore) || rawScore;
+
+  const detailedFactors = useMemo(
+    () => topShapReasons(shapValues, 4, 0.01),
+    [shapValues]
+  );
+  const detailedNarrative = reasons.length > 0
+    ? reasons.join(". ")
+    : buildMatchNarrative({ ...match, shapValues });
+  const canExplain = reasons.length > 0 || detailedFactors.length > 0 || Object.keys(scoreBreakdown).length > 0;
 
   const modeBadge = MODE_COLORS[workMode] ?? { bg: "var(--bg-subtle)", text: "var(--text-muted)" };
   const typeBadge = TYPE_COLORS[jobType]  ?? { bg: "var(--bg-subtle)", text: "var(--text-muted)" };
@@ -319,17 +346,105 @@ function MatchCard({ match, appliedIds, onApply }) {
       )}
 
       {/* Expanded reasons */}
-      {expanded && reasons.slice(1).map((r, i) => (
-        <div key={i} style={{
-          display: "flex", gap: 8, alignItems: "flex-start",
-          padding: "6px 0",
-          borderTop: "1px solid var(--border)",
-          marginBottom: i === reasons.length - 2 ? 14 : 0,
+      {expanded && (
+        <div style={{
+          border: "1px solid var(--border)",
+          background: "var(--bg-subtle)",
+          borderRadius: 8,
+          padding: "12px 14px",
+          marginBottom: 14,
         }}>
-          <CheckCircle size={12} color="#22c55e" style={{ marginTop: 2, flexShrink: 0 }} />
-          <p style={{ margin: 0, fontSize: 12, color: "var(--text-secondary)" }}>{r}</p>
+          <p style={{
+            margin: "0 0 8px",
+            fontSize: 11,
+            fontWeight: 700,
+            letterSpacing: "0.08em",
+            textTransform: "uppercase",
+            color: "var(--text-muted)",
+          }}>
+            Why this matched in detail
+          </p>
+
+          <p style={{ margin: "0 0 10px", fontSize: 12, color: "var(--text-secondary)", lineHeight: 1.55 }}>
+            {detailedNarrative}
+          </p>
+
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 10 }}>
+            <span style={{
+              fontSize: 11,
+              fontWeight: 600,
+              color: "var(--text-secondary)",
+              background: "var(--bg-card)",
+              border: "1px solid var(--border)",
+              borderRadius: 5,
+              padding: "3px 8px",
+            }}>
+              Semantic: {Math.round(similarityScore * 100)}%
+            </span>
+            <span style={{
+              fontSize: 11,
+              fontWeight: 600,
+              color: "var(--text-secondary)",
+              background: "var(--bg-card)",
+              border: "1px solid var(--border)",
+              borderRadius: 5,
+              padding: "3px 8px",
+            }}>
+              Model fit: {Math.round(mlScore * 100)}%
+            </span>
+            <span style={{
+              fontSize: 11,
+              fontWeight: 700,
+              color: scoreColor(Math.round(finalScore * 100)),
+              background: "var(--bg-card)",
+              border: "1px solid var(--border)",
+              borderRadius: 5,
+              padding: "3px 8px",
+            }}>
+              Final: {Math.round(finalScore * 100)}%
+            </span>
+          </div>
+
+          {detailedFactors.length > 0 ? detailedFactors.map((factor) => (
+            <div key={factor.feature} style={{
+              padding: "8px 0",
+              borderTop: "1px solid var(--border)",
+            }}>
+              <div style={{ display: "flex", justifyContent: "space-between", gap: 8, alignItems: "center" }}>
+                <p style={{ margin: 0, fontSize: 12, fontWeight: 700, color: "var(--text-primary)", textTransform: "capitalize" }}>
+                  {factor.label}
+                </p>
+                <span style={{
+                  margin: 0,
+                  fontSize: 11,
+                  fontWeight: 700,
+                  color: factor.value >= 0 ? "#22c55e" : "#f87171",
+                }}>
+                  {factor.value >= 0 ? "+" : ""}{factor.value.toFixed(2)}
+                </span>
+              </div>
+              <p style={{ margin: "4px 0 0", fontSize: 12, color: "var(--text-secondary)", lineHeight: 1.5 }}>
+                {explainFactor(factor)}
+              </p>
+            </div>
+          )) : reasons.slice(1).map((r, i) => (
+            <div key={i} style={{
+              display: "flex", gap: 8, alignItems: "flex-start",
+              padding: "8px 0",
+              borderTop: "1px solid var(--border)",
+            }}>
+              <CheckCircle size={12} color="#22c55e" style={{ marginTop: 2, flexShrink: 0 }} />
+              <p style={{ margin: 0, fontSize: 12, color: "var(--text-secondary)", lineHeight: 1.5 }}>{r}</p>
+            </div>
+          ))}
+
+          {missingSkills.length > 0 && (
+            <p style={{ margin: "8px 0 0", fontSize: 12, color: "var(--text-muted)" }}>
+              Skill gaps to improve: {missingSkills.slice(0, 5).join(", ")}
+            </p>
+          )}
         </div>
-      ))}
+      )}
 
       {/* Actions */}
       <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
@@ -348,7 +463,7 @@ function MatchCard({ match, appliedIds, onApply }) {
           </button>
         )}
 
-        {reasons.length > 1 && (
+        {canExplain && (
           <button onClick={() => setExpanded(!expanded)} style={{
             background: "transparent",
             border: "1.5px solid var(--border)",
@@ -360,7 +475,7 @@ function MatchCard({ match, appliedIds, onApply }) {
           </button>
         )}
 
-        <button onClick={() => navigate(`/student/match/${jobId}`)} style={{
+        <button onClick={() => navigate(`/student/jobs/${jobId}`)} style={{
           marginLeft: "auto", background: "transparent", border: "none",
           fontSize: 12, color: "var(--text-muted)",
           cursor: "pointer", display: "flex", alignItems: "center", gap: 4,
@@ -559,9 +674,9 @@ export default function StudentDashboard() {
 
   const greeting = useMemo(() => {
     const h = new Date().getHours();
-    if (h < 12) return "Good morning";
-    if (h < 17) return "Good afternoon";
-    return "Good evening";
+    if (h < 12) return "Hello";
+    if (h < 17) return "Hello";
+    return "Hello";
   }, []);
 
   useEffect(() => { fetchAll(); }, []);

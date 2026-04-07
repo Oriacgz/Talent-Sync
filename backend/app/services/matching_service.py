@@ -415,7 +415,10 @@ async def run_matching_for_job(
 
     profiles = await prisma.studentprofile.find_many(
         where={"cgpa": {"gte": min_cgpa}},
-        include={"studentSkills": {"include": {"skill": True}}},
+        include={
+            "user": True,
+            "studentSkills": {"include": {"skill": True}},
+        },
     )
 
     eligible_profiles = []
@@ -450,6 +453,7 @@ async def run_matching_for_job(
         try:
             final_score = scorer.score(s_dict, job_dict, sim)
             expl = explainer.explain(s_dict, job_dict, sim)
+            user = getattr(p, "user", None)
 
             results.append({
                 "student_id": p.id,
@@ -459,8 +463,8 @@ async def run_matching_for_job(
                 "top_reasons": expl["top_reasons"],
                 "shap_values": expl["shap_values"],
                 "skills": s_skills, # CRITICAL for recruiter view
-                "email": p.email or "",
-                "phone": p.phone or "",
+                "email": getattr(user, "email", "") or "",
+                "phone": "",
                 "branch": p.branch or "",
                 "cgpa": p.cgpa or 0.0,
             })
