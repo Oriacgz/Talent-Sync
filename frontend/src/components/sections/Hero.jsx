@@ -32,9 +32,9 @@ export default function Hero() {
         0.4
       );
 
-      tl.fromTo('.hero-yellow-bg',
-        { scaleX: 0, transformOrigin: 'left', willChange: 'transform' },
-        { scaleX: 1, duration: 0.6, ease: 'power4.inOut', onComplete: function() { gsap.set(this.targets(), { clearProps: 'willChange' }) } },
+tl.fromTo('.hero-yellow-text',
+          { fontWeight: 400, letterSpacing: '0em', color: 'var(--text-primary)', textShadow: 'none' },
+          { fontWeight: 900, letterSpacing: '0.04em', color: '#FFE135', textShadow: '0 0 16px rgba(255, 225, 53, 0.4)', duration: 0.6, ease: 'power4.inOut' },
         0.59
       );
 
@@ -136,10 +136,10 @@ export default function Hero() {
 
         <div className="flex flex-wrap gap-4 mb-8">
           <div className="hero-badge opacity-0">
-            <Badge label="SDG 8 / TE-B GRP-04" dark={true} className="border-yellow/40 text-paper/60" />
+            <Badge label="FastAPI Backend" dark={true} className="border-yellow/40 text-paper/60" />
           </div>
           <div className="hero-badge opacity-0">
-            <Badge label="SBERT + SHAP + FastAPI" dark={true} className="border-yellow/40 text-paper/60" />
+            <Badge label="SBERT + XGBoost" dark={true} className="border-yellow/40 text-paper/60" />
           </div>
         </div>
 
@@ -147,23 +147,22 @@ export default function Hero() {
           <div className="hero-line overflow-hidden w-fit text-display" style={{ clipPath: 'inset(0 100% 0 0)' }}>Find internships</div>
           <div className="hero-line overflow-hidden w-fit text-display" style={{ clipPath: 'inset(0 100% 0 0)' }}>that actually</div>
           <div className="hero-line overflow-hidden w-fit flex items-center text-display" style={{ clipPath: 'inset(0 100% 0 0)' }}>
-            <span className="relative inline-block px-3 pb-1 -ml-3 mr-3 text-ink">
-              <span className="hero-yellow-bg absolute inset-0 bg-yellow -z-10 px-3 pb-1 transform origin-left scale-x-0"></span>
-              fit
+            <span className="relative inline-block hero-yellow-text">
+              fit&nbsp;
             </span>
             you.
           </div>
         </h1>
 
         <p className="hero-sub font-mono text-[0.875rem] text-paper/55 leading-[1.7] max-w-[520px] mb-12 opacity-0">
-          TalentSync uses SBERT semantic matching and SHAP explainability to connect students with internships
-          based on real compatibility — not keywords, not luck.
+          TalentSync uses Semantic AI matching and Explainable Scoring to connect students with internships
+          based on absolute compatibility — no guesswork, just data.
         </p>
 
         <div className="flex flex-col items-start gap-2">
           <div className="flex flex-wrap gap-4 items-center">
             <div className="hero-cta opacity-0">
-              <BrutalButton variant="primary" size="lg" surface="dark" className="shadow-brutal-y border-ink" onClick={() => navigate('/login')}>GET MATCHED &rarr;</BrutalButton>
+              <BrutalButton variant="primary" size="lg" surface="dark" className="border-ink" onClick={() => navigate('/login')}>GET MATCHED &rarr;</BrutalButton>
             </div>
             <div className="hero-cta opacity-0">
               <BrutalButton variant="ghost" size="lg" surface="dark" className="border-paper text-paper">SEE HOW IT WORKS</BrutalButton>

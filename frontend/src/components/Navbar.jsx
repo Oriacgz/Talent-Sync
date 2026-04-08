@@ -138,16 +138,16 @@ export default function Navbar() {
         </div>
 
         {/* Center: Nav Links (Desktop) */}
-        <div className="hidden min-[900px]:flex items-center" style={{ gap: 'clamp(20px, 2.5vw, 40px)' }}>
+        <div className="hidden min-[900px]:flex items-center" style={{ gap: 'clamp(24px, 3vw, 48px)' }}>
           {links.map((link, i) => {
             const isActive = activeHash === link.id;
             return (
               <button 
                 key={i} 
                 onClick={() => scrollToSection(link.id)}
-                className={`relative font-mono uppercase tracking-[0.18em] transition-colors duration-200 group ${isActive ? 'text-yellow opacity-100' : 'text-paper/50 hover:text-paper hover:opacity-100'}`}
+                className={`relative font-mono uppercase tracking-widest transition-colors duration-200 group ${isActive ? 'text-yellow opacity-100' : 'text-paper/50 hover:text-paper hover:opacity-100'}`}
                 style={{
-                  fontSize: 'clamp(0.6rem, 0.65vw, 0.75rem)',
+                  fontSize: 'clamp(0.85rem, 1vw, 1rem)',
                   borderBottom: isActive ? "2px solid #FFE135" : "2px solid transparent",
                   paddingBottom: "4px"
                 }}
@@ -160,7 +160,7 @@ export default function Navbar() {
 
         {/* Right: Button & Hamburger */}
         <div className="flex items-center gap-6">
-          <BrutalButton variant="primary" className="hidden min-[900px]:inline-flex shrink-0 border-ink" style={{ padding: 'clamp(8px,0.6vw,12px) clamp(14px,1.2vw,24px)', fontSize: 'clamp(0.6rem, 0.65vw, 0.75rem)' }} onClick={() => navigate('/login')}>
+          <BrutalButton variant="primary" className="hidden min-[900px]:inline-flex shrink-0 border-ink" style={{ padding: 'clamp(12px, 0.8vw, 16px) clamp(20px, 1.5vw, 32px)', fontSize: 'clamp(0.85rem, 1vw, 1rem)' }} onClick={() => navigate('/login')}>
             GET MATCHED &rarr;
           </BrutalButton>
           
