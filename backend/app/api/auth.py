@@ -14,6 +14,27 @@ from app.middleware.rate_limit import limiter
 router = APIRouter(prefix="/auth", tags=["auth"])
 
 
+def _is_student_onboarding_complete(profile) -> bool:
+    if not profile:
+        return False
+
+    return any(
+        [
+            bool(profile.degree),
+            bool(profile.branch),
+            bool(profile.graduationYear),
+            bool(profile.college),
+            bool(profile.cgpa),
+            bool(getattr(profile, "preferredWorkMode", None)),
+            bool(profile.experienceLevel),
+            bool(profile.preferredRoles),
+            bool(getattr(profile, "studentSkills", None)),
+            bool(profile.bio),
+            bool(profile.resumeUrl),
+        ]
+    )
+
+
 @router.post("/register", response_model=TokenResponse)
 @limiter.limit("5/minute")
 async def register(request: Request, req: RegisterRequest):
@@ -88,7 +109,10 @@ async def login(request: Request, req: LoginRequest):
     req.email = req.email.strip().lower()
     user = await prisma.user.find_unique(
         where={"email": req.email},
-        include={"studentProfile": True, "recruiterProfile": True}
+        include={
+            "studentProfile": {"include": {"studentSkills": True}},
+            "recruiterProfile": True,
+        }
     )
     if not user:
         raise HTTPException(
@@ -110,9 +134,7 @@ async def login(request: Request, req: LoginRequest):
     onboarding_complete = True
     if user.role == "STUDENT" and user.studentProfile:
         name = user.studentProfile.fullName
-        # Student is onboarded if they have a bio or skills saved
-        sp = user.studentProfile
-        onboarding_complete = bool(sp.bio or sp.college or sp.degree)
+        onboarding_complete = _is_student_onboarding_complete(user.studentProfile)
     elif user.role == "RECRUITER" and user.recruiterProfile:
         name = user.recruiterProfile.fullName
 
@@ -138,10 +160,13 @@ async def refresh(request: Request, req: RefreshRequest):
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid refresh token",
        )
-    
+
     user = await prisma.user.find_unique(
         where={"id": user_id},
-        include={"studentProfile": True, "recruiterProfile": True}
+        include={
+            "studentProfile": {"include": {"studentSkills": True}},
+            "recruiterProfile": True,
+        }
     )
 
     if not user:
@@ -154,12 +179,20 @@ async def refresh(request: Request, req: RefreshRequest):
     refresh_token = create_refresh_token(user_id=user.id)
 
     name = "User"
+    onboarding_complete = True
     if user.role == "STUDENT" and user.studentProfile:
         name = user.studentProfile.fullName
+        onboarding_complete = _is_student_onboarding_complete(user.studentProfile)
     elif user.role == "RECRUITER" and user.recruiterProfile:
         name = user.recruiterProfile.fullName
 
-    user_info = {"id": user.id, "email": user.email, "role": user.role, "name": name}
+    user_info = {
+        "id": user.id,
+        "email": user.email,
+        "role": user.role,
+        "name": name,
+        "onboardingComplete": onboarding_complete,
+    }
 
     return TokenResponse(
         access_token=access_token,

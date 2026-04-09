@@ -48,8 +48,10 @@ export default function AppLayout() {
   useEffect(() => {
     let active = true
     if (role === 'STUDENT') {
+      const onboardingIncomplete = user?.onboardingComplete === false
+
       Promise.all([
-        matchService.getMyMatches(50),
+        onboardingIncomplete ? Promise.resolve([]) : matchService.getMyMatches(50),
         applicationService.getMyApplications(),
         profileService.getMyProfile(),
       ]).then(([matches, applications, profile]) => {
@@ -63,7 +65,7 @@ export default function AppLayout() {
       }).catch(() => {})
     }
     return () => { active = false }
-  }, [role, setMatches, setApplications])
+  }, [role, user?.onboardingComplete, setMatches, setApplications])
 
   // Apply persisted theme on mount
   useEffect(() => {

@@ -4,6 +4,34 @@ import { Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { authService } from '../services/authService';
 
+const DEFAULT_REGISTER_ERROR = 'Failed to create account. Please try again.';
+
+function formatRegisterErrorDetail(detail) {
+  if (!detail) return '';
+
+  if (typeof detail === 'string') return detail;
+
+  if (Array.isArray(detail) && detail.length > 0) {
+    const firstError = detail[0];
+    const rawMessage = typeof firstError?.msg === 'string'
+      ? firstError.msg.replace(/^Value error,\s*/i, '').trim()
+      : '';
+    const loc = Array.isArray(firstError?.loc) ? firstError.loc : [];
+    const field = typeof loc[loc.length - 1] === 'string' ? loc[loc.length - 1] : '';
+
+    if (!rawMessage) return '';
+    if (!field || field === 'body') return rawMessage;
+
+    const fieldLabel = field
+      .replace(/_/g, ' ')
+      .replace(/\b\w/g, (char) => char.toUpperCase());
+
+    return `${fieldLabel}: ${rawMessage}`;
+  }
+
+  return '';
+}
+
 export default function RegisterPage() {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
@@ -19,6 +47,24 @@ export default function RegisterPage() {
     e.preventDefault();
     setError('');
 
+    const trimmedName = name.trim();
+    const normalizedEmail = email.trim().toLowerCase();
+
+    if (!trimmedName) {
+      setError('Please enter your full name');
+      return;
+    }
+
+    if (password.length < 8) {
+      setError('Password must be at least 8 characters long');
+      return;
+    }
+
+    if (!/[A-Za-z]/.test(password) || !/\d/.test(password)) {
+      setError('Password must contain at least one letter and one digit');
+      return;
+    }
+
     if (password !== confirmPassword) {
       setError('Passwords do not match');
       return;
@@ -30,16 +76,21 @@ export default function RegisterPage() {
 
     setIsLoading(true);
     try {
-      await authService.register(name, email, password, role);
+      await authService.register(trimmedName, normalizedEmail, password, role);
       navigate('/login', { state: { message: 'Registration successful! Please sign in.' } });
     } catch (err) {
       const status = err?.response?.status;
+      const detail = err?.response?.data?.detail;
+      const parsedDetail = formatRegisterErrorDetail(detail);
+
       if (status === 409) {
         setError('An account with this email already exists.');
+      } else if (status === 422) {
+        setError(parsedDetail || 'Please check your input and try again.');
       } else if (status === 400) {
-        setError('Please review your details and try again.');
+        setError(parsedDetail || 'Please review your details and try again.');
       } else {
-        setError('Failed to create account. Please try again.');
+        setError(parsedDetail || DEFAULT_REGISTER_ERROR);
       }
     } finally {
       setIsLoading(false);
@@ -227,6 +278,7 @@ export default function RegisterPage() {
                     onChange={(e) => setName(e.target.value)}
                     placeholder="Jane Doe"
                     required
+                    maxLength={100}
                     className="w-full px-4 py-3 bg-[#0e0e0e] text-paper font-mono text-sm border-[3px] border-paper placeholder:text-[#4c4733] focus:outline-none focus:border-yellow focus:shadow-[0_0_0_1px_#FFE135] transition-all"
                     style={{ borderRadius: 0 }}
                   />
@@ -262,6 +314,7 @@ export default function RegisterPage() {
                       onChange={(e) => setPassword(e.target.value)}
                       placeholder="••••••••"
                       required
+                      minLength={8}
                       className="w-full px-4 py-3 bg-[#0e0e0e] text-paper font-mono text-sm border-[3px] border-paper placeholder:text-[#4c4733] focus:outline-none focus:border-yellow focus:shadow-[0_0_0_1px_#FFE135] transition-all pr-12"
                       style={{ borderRadius: 0 }}
                     />
@@ -273,6 +326,9 @@ export default function RegisterPage() {
                       {showPassword ? 'HIDE' : 'SHOW'}
                     </button>
                   </div>
+                  <p className="mt-2 font-mono text-[10px] text-[#979179]">
+                    At least 8 characters, with one letter and one number.
+                  </p>
                 </div>
 
                 {/* Confirm Password */}

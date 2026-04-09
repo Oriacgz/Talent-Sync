@@ -71,6 +71,28 @@ def _safe_shap_values(raw: Any) -> dict:
         return {}
 
 
+def _student_onboarding_complete(profile: Any) -> bool:
+    """Mirror chatbot onboarding completion signals for student access gates."""
+    if not profile:
+        return False
+
+    return any(
+        [
+            bool(getattr(profile, "degree", None)),
+            bool(getattr(profile, "branch", None)),
+            bool(getattr(profile, "graduationYear", None)),
+            bool(getattr(profile, "college", None)),
+            bool(getattr(profile, "cgpa", None)),
+            bool(getattr(profile, "preferredWorkMode", None)),
+            bool(getattr(profile, "experienceLevel", None)),
+            bool(getattr(profile, "preferredRoles", None)),
+            bool(getattr(profile, "studentSkills", None)),
+            bool(getattr(profile, "bio", None)),
+            bool(getattr(profile, "resumeUrl", None)),
+        ]
+    )
+
+
 def _merge_ranked_with_applied(
     ranked: list[dict[str, Any]],
     applied: list[dict[str, Any]],
@@ -195,12 +217,19 @@ async def get_my_matches(
 
     # Check for existing cached matches
     profile = await prisma.studentprofile.find_unique(
-        where={"userId": user_id}
+        where={"userId": user_id},
+        include={"studentSkills": True},
     )
     if not profile:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Student profile not found. Complete onboarding first.",
+        )
+
+    if not _student_onboarding_complete(profile):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Complete onboarding before viewing matches.",
         )
 
     cached = await prisma.matchscore.find_many(
@@ -365,12 +394,19 @@ async def refresh_matches(
     if not user_id:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="User not found in token")
     profile = await prisma.studentprofile.find_unique(
-        where={"userId": user_id}
+        where={"userId": user_id},
+        include={"studentSkills": True},
     )
     if not profile:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Student profile not found.",
+        )
+
+    if not _student_onboarding_complete(profile):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Complete onboarding before viewing matches.",
         )
 
     return await _run_and_format(user_id, profile, force_refresh=True)

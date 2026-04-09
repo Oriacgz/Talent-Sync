@@ -7,6 +7,7 @@ import {
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useAuthStore } from "../../store/authStore";
+import { useUIStore } from "../../store/uiStore";
 import { matchService } from "../../services/matchService";
 import { applicationService } from "../../services/applicationService";
 import { profileService } from "../../services/profileService";
@@ -546,7 +547,7 @@ function EmptyMatches({ onRefresh, profileIncomplete }) {
 // ─────────────────────────────────────────────
 // SIDEBAR
 // ─────────────────────────────────────────────
-function Sidebar({ profile, user, completionData }) {
+function Sidebar({ profile, user, completionData, onOpenCareerAI }) {
   const navigate = useNavigate();
 
   const steps = [
@@ -645,7 +646,7 @@ function Sidebar({ profile, user, completionData }) {
         <p style={{ margin: "0 0 12px", fontSize: 12, color: "var(--text-muted)", lineHeight: 1.5 }}>
           Ask why you matched, get resume tips, or prep for interviews.
         </p>
-        <button onClick={() => navigate("/student/onboarding")} style={{
+        <button onClick={onOpenCareerAI} style={{
           width: "100%", background: "var(--accent-yellow, #F5C542)",
           border: "2px solid var(--text-primary)", borderRadius: 7, padding: "8px",
           fontSize: 12, fontWeight: 700, color: "var(--text-on-accent, #1A1A1A)", cursor: "pointer",
@@ -662,7 +663,10 @@ function Sidebar({ profile, user, completionData }) {
 // ─────────────────────────────────────────────
 export default function StudentDashboard() {
   const user = useAuthStore((state) => state.user);
+  const setAIPanelOpen = useUIStore((state) => state.setAIPanelOpen);
   const navigate = useNavigate();
+
+  const openCareerAI = () => setAIPanelOpen(true);
 
   const [profile,    setProfile]    = useState(null);
   const [matches,    setMatches]    = useState([]);
@@ -772,7 +776,12 @@ export default function StudentDashboard() {
       {/* 2-col layout */}
       <div style={{ display: "grid", gridTemplateColumns: "260px 1fr", gap: 20, alignItems: "start" }}>
 
-        <Sidebar profile={profile} user={user} completionData={completionData} />
+        <Sidebar
+          profile={profile}
+          user={user}
+          completionData={completionData}
+          onOpenCareerAI={openCareerAI}
+        />
 
         <div>
           {/* Section header */}
