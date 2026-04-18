@@ -32,13 +32,17 @@ export default function ProtectedRoute({ requiredRole, children }) {
     return <Navigate to="/login" replace />
   }
 
-  // New students attempting to access the dashboard are redirected to onboarding
-  // We leave other routes (matches, profile, applications) accessible
+  // New students with incomplete onboarding cannot access match surfaces yet.
+  const blockedStudentRoutesForIncompleteOnboarding =
+    location.pathname === '/student/dashboard' ||
+    location.pathname === '/student/matches' ||
+    location.pathname.startsWith('/student/match/')
+
   if (
     requiredRole &&
     normalizedRole === 'STUDENT' &&
     user?.onboardingComplete === false &&
-    location.pathname === '/student/dashboard'
+    blockedStudentRoutesForIncompleteOnboarding
   ) {
     return <Navigate to="/student/onboarding" replace />
   }

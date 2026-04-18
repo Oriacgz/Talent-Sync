@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { MessageSquare, Send, X, RefreshCw, Sparkles, AlertTriangle, Bot, ArrowDown, TrendingUp, Target, Zap, UserCheck } from 'lucide-react'
 import { chatbotService } from '../../services/chatbotService'
 import { useUIStore } from '../../store/uiStore'
@@ -31,6 +31,25 @@ function getStoredPanelWidth() {
 }
 
 const ASSISTANT_SESSION_KEY = 'talentsync:assistant:session'
+
+function normalizeAssistantText(rawText) {
+  if (!rawText) return ''
+
+  let text = String(rawText)
+
+  // Convert common markdown syntax into plain readable text.
+  text = text.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '$1')
+  text = text.replace(/\*\*([^*]+)\*\*/g, '$1')
+  text = text.replace(/__([^_]+)__/g, '$1')
+  text = text.replace(/`([^`]+)`/g, '$1')
+  text = text.replace(/^\s*>\s?/gm, '')
+
+  // Remove simple italic markers while keeping surrounding punctuation.
+  text = text.replace(/(^|[\s(])_([^_\n]+)_([.,!?;:)]?)(?=\s|$)/g, '$1$2$3')
+  text = text.replace(/(^|[\s(])\*([^*\n]+)\*([.,!?;:)]?)(?=\s|$)/g, '$1$2$3')
+
+  return text.replace(/\n{3,}/g, '\n\n').trim()
+}
 
 /* ── Typing Indicator ── */
 function TypingIndicator() {
@@ -76,13 +95,13 @@ export default function CareerAIPanel() {
   const [sessionId, setSessionId] = useState(() => {
     try { return window.localStorage.getItem(ASSISTANT_SESSION_KEY) || null } catch { return null }
   })
-  
+
   const [messages, setMessages] = useState([])
   const [input, setInput] = useState('')
   const [isSending, setIsSending] = useState(false)
   const [requestError, setRequestError] = useState('')
   const [showScrollBtn, setShowScrollBtn] = useState(false)
-  
+
   const messagesContainerRef = useRef(null)
   const textareaRef = useRef(null)
   const resizeStartRef = useRef(null)
@@ -158,7 +177,12 @@ export default function CareerAIPanel() {
       try {
         const history = await chatbotService.getHistory(sessionId)
         if (active && history?.messages?.length) {
-          setMessages(history.messages.map((m) => ({ role: m.role, content: m.content })))
+          setMessages(
+            history.messages.map((m) => ({
+              role: m.role,
+              content: m.role === 'assistant' ? normalizeAssistantText(m.content) : String(m.content || ''),
+            }))
+          )
         }
       } catch { /* ignore */ }
     }
@@ -183,7 +207,7 @@ export default function CareerAIPanel() {
     try {
       const response = await chatbotService.sendMessage(text, sessionId, { forceAssistant: true })
       if (response?.session_id) setSessionId(response.session_id)
-      const responseText = String(response?.response || '').trim() || 'I could not generate a response. Try rephrasing.'
+      const responseText = normalizeAssistantText(response?.response) || 'I could not generate a response. Try rephrasing.'
       setMessages((prev) => [...prev, { role: 'assistant', content: responseText, time: getTimeStamp() }])
     } catch {
       setRequestError('offline')
@@ -217,7 +241,7 @@ export default function CareerAIPanel() {
       }}
     >
       {/* Resizer Handle */}
-      <div 
+      <div
         className="absolute left-0 top-0 bottom-0 w-1 cursor-col-resize group z-10"
         onPointerDown={startResizing}
       >
@@ -421,11 +445,13 @@ export default function CareerAIPanel() {
                             background: 'var(--bg-subtle)',
                             border: '1px solid var(--border)',
                             color: 'var(--text-primary)',
+                            whiteSpace: 'pre-wrap',
                           }
                         : {
                             background: 'linear-gradient(135deg, #FFE135, #FFB800)',
                             color: '#09090B',
                             fontWeight: 500,
+                            whiteSpace: 'pre-wrap',
                           }
                     }
                   >

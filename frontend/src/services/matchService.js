@@ -78,6 +78,14 @@ export const matchService = {
       : [];
   },
 
+  refreshMyMatches: async (limit = 10) => {
+    const response = await apiClient.get("/matches/refresh");
+    const rows = Array.isArray(response?.data)
+      ? response.data.map(mapStudentMatch).filter(Boolean)
+      : [];
+    return rows.slice(0, Math.max(1, Number(limit) || 10));
+  },
+
   getMatchDetail: async (matchId) => {
     const id = String(matchId || "");
     if (!id) return null;

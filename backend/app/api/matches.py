@@ -22,6 +22,7 @@ from app.db.database import get_prisma
 from app.middleware.auth import get_current_user
 from app.schemas.match import CandidateMatchResponse, MatchResponse
 from app.services.matching_service import (
+    has_meaningful_skill_overlap,
     run_matching_for_job,
     run_matching_for_student,
 )
@@ -68,6 +69,28 @@ def _safe_shap_values(raw: Any) -> dict:
         return dict(raw)
     except Exception:
         return {}
+
+
+def _student_onboarding_complete(profile: Any) -> bool:
+    """Mirror chatbot onboarding completion signals for student access gates."""
+    if not profile:
+        return False
+
+    return any(
+        [
+            bool(getattr(profile, "degree", None)),
+            bool(getattr(profile, "branch", None)),
+            bool(getattr(profile, "graduationYear", None)),
+            bool(getattr(profile, "college", None)),
+            bool(getattr(profile, "cgpa", None)),
+            bool(getattr(profile, "preferredWorkMode", None)),
+            bool(getattr(profile, "experienceLevel", None)),
+            bool(getattr(profile, "preferredRoles", None)),
+            bool(getattr(profile, "studentSkills", None)),
+            bool(getattr(profile, "bio", None)),
+            bool(getattr(profile, "resumeUrl", None)),
+        ]
+    )
 
 
 def _merge_ranked_with_applied(
@@ -194,12 +217,19 @@ async def get_my_matches(
 
     # Check for existing cached matches
     profile = await prisma.studentprofile.find_unique(
-        where={"userId": user_id}
+        where={"userId": user_id},
+        include={"studentSkills": True},
     )
     if not profile:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Student profile not found. Complete onboarding first.",
+        )
+
+    if not _student_onboarding_complete(profile):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Complete onboarding before viewing matches.",
         )
 
     cached = await prisma.matchscore.find_many(
@@ -208,12 +238,37 @@ async def get_my_matches(
         include={"job": {"include": {"recruiter": True, "jobSkills": {"include": {"skill": True}}}}},
     )
 
+    student_profile_full = await prisma.studentprofile.find_unique(
+        where={"id": profile.id},
+        include={"studentSkills": {"include": {"skill": True}}},
+    )
+    student_skills = [
+        ss.skill.name
+        for ss in (getattr(student_profile_full, "studentSkills", None) or [])
+        if getattr(ss, "skill", None)
+    ]
+
     if cached:
         active_cached = [
             m for m in cached
             if getattr(m, "job", None) and getattr(m.job, "isActive", False)
         ]
+        filtered_cached = [
+            m
+            for m in active_cached
+            if has_meaningful_skill_overlap(
+                student_skills,
+                [
+                    js.skill.name
+                    for js in (getattr(m.job, "jobSkills", None) or [])
+                    if getattr(js, "skill", None)
+                ],
+            )
+        ]
+
+        has_skill_mismatch_cached_rows = len(filtered_cached) != len(active_cached)
         has_inactive_cached_rows = len(active_cached) != len(cached)
+        profile_updated_timestamp = _to_utc(getattr(profile, "updatedAt", None))
 
         model_timestamp = _latest_model_timestamp()
         latest_cache_timestamp = _to_utc(
@@ -244,6 +299,16 @@ async def get_my_matches(
             should_refresh = True
             refresh_reasons.append("inactive_jobs_in_cache")
 
+        if has_skill_mismatch_cached_rows:
+            should_refresh = True
+            refresh_reasons.append("cached_rows_fail_skill_gate")
+
+        if profile_updated_timestamp and (
+            latest_cache_timestamp is None or latest_cache_timestamp < profile_updated_timestamp
+        ):
+            should_refresh = True
+            refresh_reasons.append("profile_updated")
+
         if should_refresh:
             logger.info(
                 "Match cache is stale for student %s (cache=%s, model=%s, jobs=%s, reasons=%s); refreshing.",
@@ -255,7 +320,7 @@ async def get_my_matches(
             )
             return await _run_and_format(user_id, profile, force_refresh=True)
 
-        cached = active_cached[:limit]
+        cached = filtered_cached[:limit]
 
     if cached:
         # Build application lookup
@@ -265,10 +330,6 @@ async def get_my_matches(
         applied_job_ids = {a.jobId for a in applications}
 
         # Build student skill set for computing missing skills
-        student_profile_full = await prisma.studentprofile.find_unique(
-            where={"id": profile.id},
-            include={"studentSkills": {"include": {"skill": True}}},
-        )
         student_skill_set = set()
         if student_profile_full and student_profile_full.studentSkills:
             student_skill_set = {
@@ -333,12 +394,19 @@ async def refresh_matches(
     if not user_id:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="User not found in token")
     profile = await prisma.studentprofile.find_unique(
-        where={"userId": user_id}
+        where={"userId": user_id},
+        include={"studentSkills": True},
     )
     if not profile:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Student profile not found.",
+        )
+
+    if not _student_onboarding_complete(profile):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Complete onboarding before viewing matches.",
         )
 
     return await _run_and_format(user_id, profile, force_refresh=True)

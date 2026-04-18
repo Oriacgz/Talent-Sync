@@ -86,7 +86,7 @@ export default function CTA() {
         </p>
 
         <div className="flex flex-col sm:flex-row items-center gap-4 mt-12 w-full sm:w-auto">
-          <BrutalButton variant="primary" size="lg" className="w-full sm:w-auto font-bold bg-yellow text-ink border-ink hover:bg-yellow shadow-[4px_4px_0px_#0A0A0A] hover:shadow-[6px_6px_0px_#0A0A0A]" onClick={() => navigate('/login')}>
+          <BrutalButton variant="primary" size="lg" className="w-full sm:w-auto font-bold bg-yellow text-ink border-ink hover:bg-yellow shadow-md hover:shadow-lg" onClick={() => navigate('/login')}>
             GET STARTED &rarr;
           </BrutalButton>
         </div>

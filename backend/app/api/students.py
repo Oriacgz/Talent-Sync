@@ -201,7 +201,27 @@ async def update_profile(
 			if resume_url:
 				update_data["resumeUrl"] = str(resume_url)
 
+	matching_sensitive_fields = {
+		"fullName",
+		"bio",
+		"college",
+		"degree",
+		"branch",
+		"graduationYear",
+		"cgpa",
+		"location",
+		"preferredWorkMode",
+		"preferredRoles",
+		"preferredLocations",
+		"experienceLevel",
+		"resumeUrl",
+		"resumeText",
+	}
+	matching_inputs_changed = False
+
 	if update_data:
+		if any(field in update_data for field in matching_sensitive_fields):
+			matching_inputs_changed = True
 		try:
 			await prisma.studentprofile.update(
 				where={"id": profile.id},
@@ -239,6 +259,7 @@ async def update_profile(
 					pass
 
 	if "skills" in provided and payload.skills is not None:
+		matching_inputs_changed = True
 		normalized_skills = _normalize_skill_names(payload.skills)
 		await prisma.studentskill.delete_many(where={"studentId": profile.id})
 		for skill_name in normalized_skills:
@@ -253,6 +274,9 @@ async def update_profile(
 					"skillId": existing_skill.id,
 				},
 			)
+
+	if matching_inputs_changed:
+		await prisma.matchscore.delete_many(where={"studentId": profile.id})
 
 	refreshed = await prisma.studentprofile.find_unique(
 		where={"id": profile.id},

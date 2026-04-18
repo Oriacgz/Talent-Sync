@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import hashlib
 import logging
+import re
 from typing import Any
 from uuid import uuid4
 
@@ -20,6 +21,15 @@ logger = logging.getLogger(__name__)
 
 TOP_N_SAVE = 20     # save top N matches to DB
 TOP_N_RETURN = 10   # return top N to API caller
+MIN_SKILL_OVERLAP_RATIO = 0.25  # avoid recommending domain-mismatched jobs on a single generic skill
+GENERIC_OVERLAP_SKILLS = {
+    "python",
+    "git",
+    "excel",
+    "communication",
+    "problem solving",
+    "teamwork",
+}
 
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
@@ -67,6 +77,66 @@ def _to_json_text(value: Any) -> str:
         raise TypeError(f"Object of type {type(obj).__name__} is not JSON serializable")
 
     return json.dumps(value if value is not None else {}, default=_default)
+
+
+def _normalize_skill_name(skill: str) -> str:
+    name = str(skill or "").strip().lower()
+    if not name:
+        return ""
+
+    # Remove parenthetical qualifiers like "(ES6+)" to improve canonical matching.
+    name = re.sub(r"\([^)]*\)", " ", name)
+    name = name.replace(".js", " js")
+    name = re.sub(r"[^a-z0-9#+]+", " ", name).strip()
+    name = re.sub(r"\s+", " ", name)
+
+    if name in {"js", "javascript es6", "javascript es6+"}:
+        return "javascript"
+    if name.startswith("javascript "):
+        return "javascript"
+    if name in {"node js", "nodejs"}:
+        return "nodejs"
+    if name in {"react js", "reactjs"}:
+        return "react"
+    if name in {"express js", "expressjs"}:
+        return "express"
+
+    return name
+
+
+def _normalized_skill_set(skills: list[str]) -> set[str]:
+    normalized = {
+        _normalize_skill_name(skill)
+        for skill in skills
+        if _normalize_skill_name(skill)
+    }
+    return normalized
+
+
+def has_meaningful_skill_overlap(student_skills: list[str] | None, job_skills: list[str] | None) -> bool:
+    """Return True when overlap passes current skill-gating policy."""
+    student_skill_set = _normalized_skill_set(student_skills or [])
+    job_skill_set = _normalized_skill_set(job_skills or [])
+
+    # If one side has no explicit skills, don't hard-block recommendation.
+    if not student_skill_set or not job_skill_set:
+        return True
+
+    overlap_skills = student_skill_set.intersection(job_skill_set)
+    overlap_count = len(overlap_skills)
+    if overlap_count == 0:
+        return False
+
+    # Reject purely generic overlaps (e.g., only Python/Git) so domain-mismatched
+    # jobs don't appear when student lacks role-specific skills.
+    if all(skill in GENERIC_OVERLAP_SKILLS for skill in overlap_skills):
+        return False
+
+    overlap_ratio = overlap_count / max(1, len(job_skill_set))
+    if overlap_ratio < MIN_SKILL_OVERLAP_RATIO:
+        return False
+
+    return True
 
 def _profile_hash(student_dict: dict, text: str) -> str:
     # Includes text ensuring semantic integrity + functional metadata integrity
@@ -242,21 +312,30 @@ async def run_matching_for_student(
 
         jobs = await prisma.job.find_many(
             where={"isActive": True},
-            include={"jobSkills": {"include": {"skill": True}}},
+            include={"jobSkills": {"include": {"skill": True}}, "recruiter": True},
         )
         if not jobs:
             return []
 
         # ── Stage 1: Hard Gate Eligibility ──
         eligible_jobs = []
+        student_skill_set = _normalized_skill_set(skills)
         for job in jobs:
+            job_skills = [js.skill.name for js in (job.jobSkills or []) if js.skill]
+            job_skill_set = _normalized_skill_set(job_skills)
+
             if float(student_dict["cgpa"]) < float(job.minCgpa or 0.0):
                 continue
             if int(student_dict["backlogs"]) > 0 and not getattr(job, "backlogAllowed", True):
                 continue
             if not _is_branch_eligible(student_dict.get("branch"), job.eligibleBranches):
                 continue
-            eligible_jobs.append(job)
+
+            # Require meaningful shared skills when both profiles define skills.
+            if not has_meaningful_skill_overlap(skills, job_skills):
+                continue
+
+            eligible_jobs.append((job, job_skills))
 
         if not eligible_jobs:
             return []
@@ -264,8 +343,7 @@ async def run_matching_for_student(
         # ── Stage 2: Retrieval ──
         student_emb = await _get_student_embedding(prisma, profile.id, student_dict)
         retrieved = []
-        for job in eligible_jobs:
-            job_skills = [js.skill.name for js in (job.jobSkills or []) if js.skill]
+        for job, job_skills in eligible_jobs:
             job_dict = _job_to_dict(job, job_skills)
             job_emb = await _get_job_embedding(prisma, job.id, job_dict)
             sim = encoder.cosine_similarity(student_emb, job_emb)
@@ -283,7 +361,10 @@ async def run_matching_for_student(
         if not scorer.has_model:
             # Fallback Pipeline
             for j, j_dict, j_skills, j_emb, sim in top_k:
-                missing = [s for s in j_skills if s.lower() not in [x.lower() for x in skills]]
+                missing = [
+                    s for s in j_skills
+                    if _normalize_skill_name(s) not in student_skill_set
+                ]
                 results.append({
                     "job_id": j.id,
                     "job": j,
@@ -314,7 +395,10 @@ async def run_matching_for_student(
                     final_score = (0.7 * sim) + (0.3 * final_score)
 
                 expl = explainer.explain(student_dict, j_dict, sim)
-                missing = [s for s in j_skills if s.lower() not in [x.lower() for x in skills]]
+                missing = [
+                    s for s in j_skills
+                    if _normalize_skill_name(s) not in student_skill_set
+                ]
                 results.append({
                     "job_id": j.id,
                     "job": j,
@@ -345,7 +429,9 @@ async def run_matching_for_student(
                 score = cand["final_score"]
                 penalty = 0.0
                 for r in ranked_results:
-                    if cand["job"].companyName == r["job"].companyName:
+                    # Job model does not expose companyName directly; use recruiterId
+                    # to apply same-company diversity penalty safely.
+                    if getattr(cand["job"], "recruiterId", None) == getattr(r["job"], "recruiterId", None):
                         penalty += 0.2
 
                 mmr = 0.8 * score - 0.2 * penalty

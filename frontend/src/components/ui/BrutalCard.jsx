@@ -6,7 +6,7 @@ export default function BrutalCard({ variant = 'default', children, className = 
   if (variant === 'default') {
     classes += 'bg-paper text-ink border-ink shadow-brutal-md hover:shadow-brutal-lg';
   } else if (variant === 'dark') {
-    classes += 'bg-ink text-paper border-paper shadow-brutal-inv hover:shadow-[10px_10px_0px_#FAF9F6]';
+    classes += 'bg-ink text-paper border-paper shadow-md hover:shadow-lg';
   } else if (variant === 'yellow') {
     classes += 'bg-yellow text-ink border-ink shadow-brutal-md hover:shadow-brutal-lg';
   }

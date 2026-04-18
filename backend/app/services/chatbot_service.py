@@ -18,6 +18,7 @@ import re
 from typing import Any
 
 from prisma import Json
+from prisma.errors import FieldNotFoundError
 
 from app.db.database import get_prisma
 from app.services import llm_provider
@@ -615,6 +616,24 @@ async def _save_student_profile(user_id: str, data: dict[str, Any]) -> None:
     """Persist the collected onboarding data to StudentProfile."""
     prisma = get_prisma()
     profile = await prisma.studentprofile.find_unique(where={"userId": user_id})
+    preferred_work_mode = data.get("preferred_work_mode")
+
+    async def _persist_preferred_work_mode(profile_id: str) -> None:
+        if preferred_work_mode is None:
+            return
+        try:
+            await prisma.execute_raw(
+                'UPDATE "StudentProfile" SET "preferredWorkMode" = CAST($1 AS "WorkMode") WHERE "id" = $2',
+                preferred_work_mode,
+                profile_id,
+            )
+        except Exception:
+            # Ignore in environments where the DB column is not available yet.
+            logger.debug(
+                "Skipping preferredWorkMode persistence for profile=%s",
+                profile_id,
+                exc_info=True,
+            )
 
     update_payload: dict[str, Any] = {
         "fullName": data.get("full_name", ""),
@@ -634,26 +653,45 @@ async def _save_student_profile(user_id: str, data: dict[str, Any]) -> None:
             pass
     if data.get("preferred_roles"):
         update_payload["preferredRoles"] = data["preferred_roles"]
-    if data.get("preferred_work_mode"):
-        update_payload["preferredWorkMode"] = data["preferred_work_mode"]
+    if preferred_work_mode:
+        update_payload["preferredWorkMode"] = preferred_work_mode
     if data.get("experience_level"):
         update_payload["experienceLevel"] = data["experience_level"]
 
     if profile:
-        await prisma.studentprofile.update(
-            where={"userId": user_id},
-            data=update_payload,
-        )
+        try:
+            await prisma.studentprofile.update(
+                where={"userId": user_id},
+                data=update_payload,
+            )
+        except FieldNotFoundError:
+            # Backward-compat for stale generated Prisma client missing preferredWorkMode.
+            legacy_update_payload = {
+                k: v for k, v in update_payload.items() if k != "preferredWorkMode"
+            }
+            if legacy_update_payload:
+                await prisma.studentprofile.update(
+                    where={"userId": user_id},
+                    data=legacy_update_payload,
+                )
+            await _persist_preferred_work_mode(profile.id)
     else:
         create_payload = {
             "userId": user_id,
             "fullName": data.get("full_name", ""),
             "preferredRoles": data.get("preferred_roles") or [],
             "preferredLocations": data.get("preferred_locations") or [],
-            "preferredWorkMode": data.get("preferred_work_mode"),
+            "preferredWorkMode": preferred_work_mode,
         }
         create_payload.update({k: v for k, v in update_payload.items() if k != "fullName"})
-        await prisma.studentprofile.create(data=create_payload)
+        try:
+            await prisma.studentprofile.create(data=create_payload)
+        except FieldNotFoundError:
+            legacy_create_payload = {
+                k: v for k, v in create_payload.items() if k != "preferredWorkMode"
+            }
+            created_profile = await prisma.studentprofile.create(data=legacy_create_payload)
+            await _persist_preferred_work_mode(created_profile.id)
 
     # Link skills through Skill + StudentSkill tables
     if data.get("skills"):

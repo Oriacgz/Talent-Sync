@@ -144,10 +144,17 @@ export default function MatchesPage() {
       try {
         const data = await matchService.getMyMatches(50)
         if (active && Array.isArray(data)) setMatches(data)
-      } catch {
-        // Leave existing matches unchanged if loading fails.
+      } catch (err) {
+        if (active && err?.response?.status === 403) {
+          const detail = String(err?.response?.data?.detail || '').toLowerCase()
+          if (detail.includes('complete onboarding')) {
+            setMatches([])
+            setProfileIncomplete(true)
+            toast.error('Complete onboarding to unlock matches.')
+          }
+        }
       }
-      
+
       try {
         // We reuse the same heuristic from Dashboard
         const profileData = await profileService.getMyProfile()
@@ -161,12 +168,12 @@ export default function MatchesPage() {
           setProfileIncomplete(score <= 50)
         }
       } catch {}
-      
+
       if (active) setLoading(false)
     }
     load()
     return () => { active = false }
-  }, [setLoading, setMatches])
+  }, [setLoading, setMatches, toast])
 
   const sortedMatches = useMemo(
     () => [...matches].sort((a, b) => (Number(b.score || b.finalScore) || 0) - (Number(a.score || a.finalScore) || 0)),

@@ -22,20 +22,18 @@ class ProfileEncoder:
             self._model = SentenceTransformer(self.MODEL_NAME)
         return self._model
 
-    # ── Text builders ─────────────────────────────────────────────────────────
-
     def _student_text(self, profile: dict) -> str:
         # Handle both camelCase and snake_case keys
         skills_raw = profile.get("skills") or []
         skills = ", ".join(skills_raw) if isinstance(skills_raw, list) else str(skills_raw)
-        
+
         exp = profile.get('experience_level') or profile.get('experienceLevel') or ''
         roles_raw = profile.get('preferred_roles') or profile.get('preferredRoles') or []
         roles = ", ".join(roles_raw) if isinstance(roles_raw, list) else str(roles_raw)
-        
+
         locations_raw = profile.get('preferred_locations') or profile.get('preferredLocations') or []
         locations = ", ".join(locations_raw) if isinstance(locations_raw, list) else str(locations_raw)
-        
+
         return (
             f"Skills: {skills}. "
             f"Degree: {profile.get('degree', '')} {profile.get('branch', '')}. "
