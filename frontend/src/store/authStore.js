@@ -6,6 +6,8 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 
+let hydrateAuthStoreState;
+
 const DEV_MODE = import.meta.env.DEV && String(import.meta.env.VITE_DEV_AUTH_MODE || "false").toLowerCase() === "true";
 const DEV_ROLE = String(import.meta.env.VITE_DEV_AUTH_ROLE || "student").toLowerCase() === "recruiter"
   ? "recruiter"
@@ -37,27 +39,31 @@ const getInitialAuthState = () => {
   };
 };
 
-export const useAuthStore = create(persist((set) => ({
-  ...getInitialAuthState(),
-  setAuth: (user, token, refreshToken) => set({
-    user,
-    token,
-    refreshToken,
-    isAuthenticated: true,
-    rehydrated: true,
-  }),
-  clearAuth: () => set({
-    user: null,
-    token: null,
-    refreshToken: null,
-    isAuthenticated: false,
-    rehydrated: true,
-  }),
-  setRehydrated: (rehydrated) => set({ rehydrated: Boolean(rehydrated) }),
-  updateUser: (userUpdates) => set((state) => ({
-    user: { ...state.user, ...userUpdates }
-  })),
-}), {
+export const useAuthStore = create(persist((set) => {
+  hydrateAuthStoreState = set;
+
+  return {
+    ...getInitialAuthState(),
+    setAuth: (user, token, refreshToken) => set({
+      user,
+      token,
+      refreshToken,
+      isAuthenticated: true,
+      rehydrated: true,
+    }),
+    clearAuth: () => set({
+      user: null,
+      token: null,
+      refreshToken: null,
+      isAuthenticated: false,
+      rehydrated: true,
+    }),
+    setRehydrated: (rehydrated) => set({ rehydrated: Boolean(rehydrated) }),
+    updateUser: (userUpdates) => set((state) => ({
+      user: { ...state.user, ...userUpdates }
+    })),
+  };
+}, {
   name: "talentsync-auth",
   merge: (persistedState, currentState) => {
     if (DEV_MODE) {
@@ -70,6 +76,7 @@ export const useAuthStore = create(persist((set) => ({
     };
   },
   onRehydrateStorage: () => (state) => {
-    state?.setRehydrated(true);
+    state?.setRehydrated?.(true);
+    hydrateAuthStoreState?.({ rehydrated: true });
   },
 }));

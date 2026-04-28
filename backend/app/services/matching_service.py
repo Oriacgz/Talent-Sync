@@ -420,6 +420,7 @@ async def run_matching_for_student(
         # ── Stage 4: MMR Diversity Filter ──
         ranked_results = []
         unselected = sorted(results, key=lambda x: x["final_score"], reverse=True)
+        recruiter_counts = {}
 
         while unselected and len(ranked_results) < TOP_N_SAVE:
             best_idx = 0
@@ -427,20 +428,18 @@ async def run_matching_for_student(
 
             for i, cand in enumerate(unselected):
                 score = cand["final_score"]
-                penalty = 0.0
-                for r in ranked_results:
-                    # Job model does not expose companyName directly; use recruiterId
-                    # to apply same-company diversity penalty safely.
-                    if getattr(cand["job"], "recruiterId", None) == getattr(r["job"], "recruiterId", None):
-                        penalty += 0.2
+                recruiter_id = getattr(cand["job"], "recruiterId", None)
+                penalty = 0.2 * recruiter_counts.get(recruiter_id, 0)
 
-                mmr = 0.8 * score - 0.2 * penalty
+                mmr = 0.8 * score - penalty
                 if mmr > best_mmr:
                     best_mmr = mmr
                     best_idx = i
 
             best_cand = unselected.pop(best_idx)
             ranked_results.append(best_cand)
+            best_recruiter_id = getattr(best_cand["job"], "recruiterId", None)
+            recruiter_counts[best_recruiter_id] = recruiter_counts.get(best_recruiter_id, 0) + 1
 
         # Save to DB
         for rank, result in enumerate(ranked_results, 1):

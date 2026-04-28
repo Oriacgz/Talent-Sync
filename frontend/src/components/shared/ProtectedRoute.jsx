@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react'
 import { Navigate, Outlet, useLocation } from 'react-router-dom'
 import { useAuthStore } from '../../store/authStore'
 import { normalizeRole } from '../../utils/roleUtils'
@@ -7,8 +8,19 @@ export default function ProtectedRoute({ requiredRole, children }) {
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated)
   const rehydrated = useAuthStore((state) => state.rehydrated)
   const user = useAuthStore((state) => state.user)
+  const [hydrationTimedOut, setHydrationTimedOut] = useState(false)
 
-  if (!rehydrated) {
+  useEffect(() => {
+    if (rehydrated) return undefined
+
+    const timeoutId = window.setTimeout(() => {
+      setHydrationTimedOut(true)
+    }, 4000)
+
+    return () => window.clearTimeout(timeoutId)
+  }, [rehydrated])
+
+  if (!rehydrated && !hydrationTimedOut) {
     return (
       <div className="card-base mx-auto mt-6 max-w-md text-sm text-ink/75" role="status" aria-live="polite">
         Loading workspace session...
