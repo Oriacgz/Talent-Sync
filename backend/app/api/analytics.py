@@ -48,7 +48,7 @@ async def platform_stats(user: dict = Depends(get_current_user)):
 		except Exception:
 			# Fallback: if raw query fails, use bounded fetch
 			match_rows = await prisma.matchscore.find_many(take=1000)
-			if match_rows:
+			if match_rows and len(match_rows) > 0:
 				avg_score = sum(float(row.finalScore) for row in match_rows) / len(match_rows)
 
 	return {
@@ -105,7 +105,7 @@ async def recruiter_analytics(user: dict = Depends(require_role("RECRUITER"))):
 		totals_counter[status_label] += 1
 
 	avg_score = 0.0
-	if matches:
+	if matches and len(matches) > 0:
 		avg_score = sum(float(row.finalScore) for row in matches) / len(matches)
 
 	# Last 14-day applications histogram.
